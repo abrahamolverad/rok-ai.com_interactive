@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: rok-ai-interactive
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        value: mongodb+srv://your-mongodb-connection-string
+    autoDeploy: true
+    plan: starter
