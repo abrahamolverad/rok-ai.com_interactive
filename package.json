@@ -9,18 +9,10 @@
                     "start-render":  "next start -p \\"
                 },
     "dependencies":  {
-                         "@alpacahq/alpaca-trade-api":  "^3.1.3",
-                         "bcryptjs":  "^3.0.2",
                          "dayjs":  "1.11.11",
-                         "mongoose":  "^8.14.3",
-                         "next":  "15.3.2",
-                         "next-auth":  "^4.24.11",
-                         "papaparse":  "5.5.2",
-                         "plotly.js":  "2.32.0",
-                         "react":  "18.3.1",
-                         "react-dom":  "18.3.1",
-                         "react-plotly.js":  "2.6.0",
-                         "swr":  "2.2.2"
+                         "next":  "14.0.4",
+                         "react":  "18.2.0",
+                         "react-dom":  "18.2.0"
                      },
     "devDependencies":  {
                             "@types/react":  "19.1.4",

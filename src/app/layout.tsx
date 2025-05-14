@@ -1,20 +1,13 @@
 import './globals.css';
 
-export const metadata = {
-  title: 'ROK AI Interactive',
-  description: 'Financial Intelligence Platform',
-};
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>
-        {children}
-      </body>
+      <head>
+        <title>ROK AI Interactive</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }
