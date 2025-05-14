@@ -6,8 +6,6 @@ import { useAppStore } from '@/lib/store';
 // It's good practice to type the Lenis instance if you're going to store it in a ref.
 // However, since Lenis is imported dynamically, its type might not be available at the top level
 // without some extra setup or if Lenis itself doesn't export its instance type easily.
-// For now, we'll type the ref as 'any' or a more generic type if Lenis type is hard to get here.
-// A better approach would be to ensure Lenis type is available or use conditional typing.
 
 interface LenisInstance {
   raf: (time: number) => void;
@@ -16,7 +14,7 @@ interface LenisInstance {
 }
 
 export function useSmoothScroll() {
-  const scrollRef = useRef<LenisInstance | null>(null); // Use a more specific type if possible
+  const scrollRef = useRef<LenisInstance | null>(null); 
   const setIsLoaded = useAppStore((state) => state.setIsLoaded);
   
   useEffect(() => {
@@ -31,8 +29,8 @@ export function useSmoothScroll() {
           orientation: 'vertical', 
           gestureOrientation: 'vertical', 
           smoothWheel: true, 
-          wheelMultiplier: 1, // Corrected: Use 'wheelMultiplier' instead of 'mouseMultiplier'
-          smoothTouch: false, 
+          wheelMultiplier: 1, 
+          // smoothTouch: false, // Removed as it caused a type error and defaults to false
           touchMultiplier: 2,
           infinite: false,
         });
