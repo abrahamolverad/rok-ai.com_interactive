@@ -1,55 +1,83 @@
-// src/app/settings/page.tsx
-import React from 'react';
-import AlpacaSettingsForm from '@/components/AlpacaSettingsForm'; // Adjust import path if needed
-import { getServerSession } from "next-auth/next"; // To potentially check session server-side
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'; // Your auth options
-import { redirect } from 'next/navigation'; // To redirect if not logged in
-
-// Optional: Add Metadata for the page
-export const metadata = {
-  title: 'Settings - RokAi Trading',
-  description: 'Manage your RokAi Trading account settings.',
-};
-
-// This page component runs on the server by default in App Router
-export default async function SettingsPage() {
-  // --- Server-side Authentication Check ---
-  // Protect the page server-side
-  const session = await getServerSession(authOptions);
-  if (!session || !session.user) {
-    // Redirect to login page if not authenticated
-    redirect('/login?callbackUrl=/settings'); // Redirect back to settings after login
-  }
-  // --- End Authentication Check ---
-
-  // Fetch current user settings if needed to pass as props (e.g., current paper/live status)
-  // const userSettings = await getUserSettings(session.user.id); // Example function
-
+export default function SettingsPage() {
   return (
-    // Using Tailwind classes for layout and background
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-4 md:p-8">
-       <div className="container mx-auto">
-            <h1 className="text-3xl font-bold mb-6 text-teal-400 border-b border-gray-700 pb-2">Account Settings</h1>
-
-            <div className="mb-10">
-                {/* Render the Alpaca settings form component */}
-                {/* Pass any fetched settings as props if needed */}
-                <AlpacaSettingsForm /* currentIsPaper={userSettings?.alpacaPaperTrading} */ />
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-8 text-rokPurple">Account Settings</h1>
+      
+      <div className="bg-rokGrayDark p-6 rounded-xl border border-rokGrayBorder mb-8">
+        <h2 className="text-xl font-semibold mb-4 text-rokIvory">API Connections</h2>
+        
+        <div className="mb-6">
+          <h3 className="text-lg mb-2 text-rokIvory">Alpaca API</h3>
+          <form className="space-y-4">
+            <div>
+              <label htmlFor="alpaca_key" className="block text-rokGrayText mb-1">API Key</label>
+              <input 
+                id="alpaca_key"
+                type="password" 
+                className="w-full p-2 rounded bg-rokGrayInput border border-rokGrayBorder text-rokIvory"
+                placeholder="Enter your Alpaca API key"
+              />
             </div>
-
-            {/* --- Placeholder for 2FA Settings --- */}
-            <div className="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-                 <h3 className="text-xl font-semibold mb-4 text-teal-300">Two-Factor Authentication (2FA)</h3>
-                 <p className="text-gray-400">
-                    (2FA setup component will go here)
-                 </p>
-                 {/* TODO: Add component for enabling/disabling 2FA and showing QR code */}
+            <div>
+              <label htmlFor="alpaca_secret" className="block text-rokGrayText mb-1">Secret Key</label>
+              <input 
+                id="alpaca_secret"
+                type="password" 
+                className="w-full p-2 rounded bg-rokGrayInput border border-rokGrayBorder text-rokIvory"
+                placeholder="Enter your Alpaca Secret key"
+              />
             </div>
-            {/* --- End Placeholder --- */}
-
-             {/* Add other settings sections as needed */}
-
-       </div>
+            <div className="flex items-center mb-4">
+              <input 
+                id="paper_trading" 
+                type="checkbox" 
+                className="mr-2 h-4 w-4" 
+                checked 
+              />
+              <label htmlFor="paper_trading" className="text-rokGrayText">Use Paper Trading</label>
+            </div>
+            <button 
+              type="button" 
+              className="bg-rokPurple text-white py-2 px-4 rounded hover:bg-purple-700 transition"
+            >
+              Save API Settings
+            </button>
+          </form>
+        </div>
+      </div>
+      
+      <div className="bg-rokGrayDark p-6 rounded-xl border border-rokGrayBorder">
+        <h2 className="text-xl font-semibold mb-4 text-rokIvory">User Profile</h2>
+        <form className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-rokGrayText mb-1">Name</label>
+            <input 
+              id="name"
+              type="text" 
+              className="w-full p-2 rounded bg-rokGrayInput border border-rokGrayBorder text-rokIvory"
+              placeholder="Your name" 
+              value="User Name"
+            />
+          </div>
+          <div>
+            <label htmlFor="email" className="block text-rokGrayText mb-1">Email</label>
+            <input 
+              id="email"
+              type="email" 
+              className="w-full p-2 rounded bg-rokGrayInput border border-rokGrayBorder text-rokIvory"
+              placeholder="Your email" 
+              value="user@example.com"
+              disabled
+            />
+          </div>
+          <button 
+            type="button" 
+            className="bg-rokPurple text-white py-2 px-4 rounded hover:bg-purple-700 transition"
+          >
+            Update Profile
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
