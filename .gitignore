@@ -1,0 +1,5 @@
+﻿node_modules/
+.next/
+out/
+*.pack
+backup_rokai_mirror/

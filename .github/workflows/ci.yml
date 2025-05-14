@@ -1,0 +1,31 @@
+name: CI         # ← this is the workflow’s display name
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1 · Check out code
+      - uses: actions/checkout@v4
+
+      # 2 · Set up Node 20 and restore / save the npm cache
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          # If we later need to bust the cache, just change the salt value
+          cache-dependency-path: |
+            package-lock.json
+            .github/workflows/cache-salt-v1   # ← leave as-is for now
+
+      # 3 · Install production dependencies
+      - run: npm ci
+
+      # 4 · 🔍 Diagnostic: confirm that next-auth is installed
+      - name: List next-auth to verify install
+        run: npm ls next-auth || true
+
+      # 5 · Build the Next.js app
+      - run: npm run build
