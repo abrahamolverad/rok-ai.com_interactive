@@ -1,13 +1,15 @@
+// src/components/ParticleField.tsx
 "use client";
 
 import { useRef, useEffect } from 'react';
-import * as THREE from 'three';
+import * as THREE from 'three'; // Import THREE
 import { useFrame } from '@react-three/fiber';
 import { gsap } from 'gsap';
 import { useAppStore } from '@/lib/store';
 
 export function ParticleField() {
-  const particles = useRef();
+  // Provide an explicit type for the ref
+  const particles = useRef<THREE.Points | null>(null);
   const count = 2000;
   const hasInteracted = useAppStore((state) => state.hasInteracted);
   const currentSection = useAppStore((state) => state.currentSection);
@@ -24,7 +26,7 @@ export function ParticleField() {
   
   // Animation
   useFrame((state, delta) => {
-    if (!particles.current) return;
+    if (!particles.current) return; // Ensure ref.current is not null
     
     // Rotate particles based on current section
     const rotationSpeed = hasInteracted ? 0.05 : 0.02;
@@ -46,9 +48,13 @@ export function ParticleField() {
   
   // Change color based on section
   useEffect(() => {
-    if (!particles.current) return;
+    // Ensure ref.current and material exist, and material has a color property
+    if (!particles.current || !particles.current.material) return;
     
-    const colors = {
+    const material = particles.current.material as THREE.PointsMaterial; // Type assertion
+    if (!(material.color instanceof THREE.Color)) return; // Ensure color is a THREE.Color
+
+    const colors: { [key: string]: THREE.Color } = { // Explicitly type colors object
       home: new THREE.Color('#0066ff'),
       about: new THREE.Color('#00ccff'),
       trading: new THREE.Color('#ff3366'),
@@ -58,13 +64,13 @@ export function ParticleField() {
     
     const targetColor = colors[currentSection] || colors.home;
     
-    gsap.to(particles.current.material.color, {
+    gsap.to(material.color, {
       r: targetColor.r,
       g: targetColor.g,
       b: targetColor.b,
       duration: 1
     });
-  }, [currentSection]);
+  }, [currentSection]); // Dependency array includes currentSection
 
   return (
     <points ref={particles}>
@@ -81,7 +87,7 @@ export function ParticleField() {
         sizeAttenuation={true}
         depthWrite={false}
         blending={THREE.AdditiveBlending}
-        color="#0066ff"
+        color="#0066ff" // Initial color
       />
     </points>
   );
