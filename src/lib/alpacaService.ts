@@ -1,3 +1,4 @@
+
 // src/lib/alpacaService.ts
 import Alpaca from '@alpacahq/alpaca-trade-api';
 import dayjs from 'dayjs';
@@ -220,7 +221,7 @@ export async function fetchAndCalculatePnl(
     let pageCount = 0;
     let currentAfterISO = startDate.toISOString();
     const fetchUntilISO = endDate.toISOString();
-    const pageSizeParam = 100; // Define page size here for reuse (Alpaca SDK expects pageSize)
+    const pageSizeParam = 100; 
 
     try {
         while (pageCount < MAX_PAGES) {
@@ -229,21 +230,28 @@ export async function fetchAndCalculatePnl(
             let success = false;
             let activityPage: any[] = [];
             
-            // Corrected params object with camelCase properties
-            const params = { 
-                activityTypes: ['FILL'], // Corrected from activity_types
+            // Corrected params object with camelCase properties and all expected optional keys
+            const params: {
+                activityTypes: string[];
+                direction: 'asc' | 'desc' | undefined;
+                after: string | undefined;
+                until: string | undefined;
+                date: string | undefined; // Added: Expected by SDK type, even if undefined
+                pageSize: number | undefined;
+                pageToken: string | undefined; // Added: Expected by SDK type, even if undefined
+            } = { 
+                activityTypes: ['FILL'], 
                 direction: 'asc', 
                 after: currentAfterISO, 
                 until: fetchUntilISO, 
-                pageSize: pageSizeParam // Corrected from page_size
-                // The Alpaca SDK type also includes 'date' and 'pageToken' as optional.
-                // If you don't need them, they can be omitted.
-                // date: undefined, 
-                // pageToken: undefined, 
+                pageSize: pageSizeParam,
+                date: undefined,      // Explicitly set to undefined if not used
+                pageToken: undefined  // Explicitly set to undefined if not used
             };
 
             while (retries < MAX_RETRIES && !success) {
                 try {
+                    // Make sure to pass the correctly typed params object
                     activityPage = await alpaca.getAccountActivities(params);
                     success = true;
                 } catch (api_e: any) {
@@ -275,7 +283,6 @@ export async function fetchAndCalculatePnl(
             allActivities.push(...activityPage);
 
             const lastActivity = activityPage[activityPage.length - 1];
-            // Use a more robust way to get the timestamp, checking common Alpaca API fields
             const lastActivityTimeObj = lastActivity?.transaction_time || lastActivity?.timestamp || lastActivity?.submitted_at || lastActivity?.created_at;
             if (lastActivityTimeObj) {
                 try {
@@ -285,11 +292,11 @@ export async function fetchAndCalculatePnl(
                 } catch (ts_e) { fetchErrors.push(`Timestamp parse error: ${ts_e}`); console.error(`TS parse error: ${ts_e}. Stopping.`); break; }
             } else { console.warn("Last activity no timestamp. Stopping pagination."); break; }
 
-            if (activityPage.length < pageSizeParam) { // Use pageSizeParam for comparison
+            if (activityPage.length < pageSizeParam) { 
                 console.log("Received less than page size, assuming end of activities.");
                 break; // Break page loop
             }
-            await delay(200); // Rate limiting delay
+            await delay(200); 
         } // End page while loop
 
         console.log(`Fetched ${allActivities.length} total fill activities across ${pageCount} page(s).`);
@@ -301,12 +308,11 @@ export async function fetchAndCalculatePnl(
         let parseErrors = 0;
         allActivities.forEach(act => {
             try {
-                // Ensure all necessary fields are present before processing a fill
                 if (String(act.activity_type).toUpperCase() === 'FILL' && act.symbol && act.qty && act.price && (act.transaction_time || act.timestamp) && act.side && act.order_id) {
                     const symbol = act.symbol;
                     if (!fillsBySymbol[symbol]) fillsBySymbol[symbol] = [];
                     fillsBySymbol[symbol].push({
-                        timestamp: dayjs(act.transaction_time || act.timestamp).utc().toDate(), // Prefer transaction_time
+                        timestamp: dayjs(act.transaction_time || act.timestamp).utc().toDate(), 
                         side: act.side as 'buy' | 'sell',
                         qty: parseFloat(act.qty),
                         price: parseFloat(act.price),
