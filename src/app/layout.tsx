@@ -1,5 +1,10 @@
 import './globals.css';
 
+export const metadata = {
+  title: 'ROK AI Interactive',
+  description: 'Financial Intelligence Platform',
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -7,11 +12,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <title>ROK AI Interactive</title>
-        <meta name="description" content="ROK AI Interactive Trading Platform" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </head>
       <body>
         {children}
       </body>
