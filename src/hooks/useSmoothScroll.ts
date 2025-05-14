@@ -25,24 +25,14 @@ export function useSmoothScroll() {
       // Import Lenis dynamically to avoid SSR issues
       import('lenis').then(({ default: Lenis }) => {
         // Corrected Lenis options
-        // 'direction' is typically 'orientation'
-        // 'gestureDirection' is typically 'gestureOrientation'
         scrollRef.current = new Lenis({
           duration: 1.2,
           easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-          orientation: 'vertical', // Corrected: Use 'orientation'
-          gestureOrientation: 'vertical', // Corrected: Use 'gestureOrientation'
-          // 'smooth' is often 'smoothWheel' or implied, check Lenis docs for v1.0.45
-          // For v1.0.45, smooth scrolling is the default behavior.
-          // 'smoothWheel' is an option if you want to configure it specifically.
-          // Let's assume 'smooth: true' was meant to enable the general smooth behavior.
-          // The 'smooth' property itself might not be a direct option.
-          // Lenis is smooth by default. Options like 'smoothWheel' (boolean) and 'smoothTouch' (boolean) exist.
-          // Removing 'smooth: true' as it's not a standard top-level option for v1.x
-          // and smoothness is inherent.
-          smoothWheel: true, // Explicitly enable smooth wheel
-          mouseMultiplier: 1,
-          smoothTouch: false, // Your previous setting
+          orientation: 'vertical', 
+          gestureOrientation: 'vertical', 
+          smoothWheel: true, 
+          wheelMultiplier: 1, // Corrected: Use 'wheelMultiplier' instead of 'mouseMultiplier'
+          smoothTouch: false, 
           touchMultiplier: 2,
           infinite: false,
         });
