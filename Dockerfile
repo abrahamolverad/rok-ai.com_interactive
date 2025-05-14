@@ -1,34 +1,20 @@
-# Use an official Node.js runtime as a parent image.
-# Alpine Linux is a good choice for small image sizes.
+# Use a lightweight Node.js Alpine image as the base
 FROM node:20-alpine
 
-# Set the working directory in the container.
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if it exists).
-# This step benefits from Docker's layer caching.
-COPY package*.json ./
+# Copy only the necessary files for the simple server
+# It's assumed that server.js and index.html are in the root of your
+# pure-html-site branch, or adjust the source path if they are in a subdirectory.
+COPY server.js .
+COPY index.html .
 
-# Install only production dependencies.
-# npm ci is generally preferred for CI/CD environments if you have a package-lock.json
-# as it provides more deterministic builds.
-# If package-lock.json is not present or you prefer npm install:
-RUN npm install --only=production
+# Expose the port the server will listen on.
+# Your server.js uses process.env.PORT || 3000, so Render will set this.
+# This EXPOSE instruction is good practice but Render handles port mapping based on your server's actual listening.
+EXPOSE 3000 
 
-# Copy the rest of your application's source code into the Docker image.
-# This includes your server.js and index.html (assuming they are in the root).
-# If server.js or index.html are in a subdirectory (e.g., 'src'),
-# you would adjust the COPY command (e.g., COPY src/server.js . and COPY src/index.html .).
-COPY . .
-
-# Your server.js is configured to use process.env.PORT or fall back to 3000.
-# EXPOSE informs Docker that the container listens on the specified network ports at runtime.
-# This is good practice for documentation but doesn't affect Render's port detection directly,
-# as Render relies on the PORT environment variable your app binds to.
-EXPOSE 3000
-
-# Render will set the PORT environment variable. Your server.js already handles this.
-# No need to set ENV PORT here as Render will provide it.
-
-# Define the command to run your application.
-CMD [ "node", "server.js" ]
+# Command to run your server.
+# This will execute the server.js script using Node.
+CMD ["node", "server.js"]
