@@ -8,49 +8,103 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
-      padding: 20px;
-      background-color: #121212;
-      color: #e5e5e5;
+      padding: 0;
+      background-color: #0f0f1a;
+      color: #f8f8f5;
       line-height: 1.6;
     }
     .container {
-      max-width: 800px;
+      max-width: 1000px;
       margin: 0 auto;
-      padding: 40px 20px;
+      padding: 60px 20px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 60px;
     }
     h1 {
+      font-size: 3rem;
       color: #a855f7;
       margin-bottom: 20px;
     }
-    p {
-      margin-bottom: 20px;
+    .tagline {
+      font-size: 1.5rem;
+      color: #d1d5db;
+      margin-bottom: 40px;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 60px;
+    }
+    .feature {
+      background-color: rgba(26, 27, 38, 0.7);
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 30px;
+    }
+    .feature h2 {
+      color: #a855f7;
+      margin-top: 0;
+      margin-bottom: 15px;
     }
     .cta {
-      margin-top: 40px;
+      text-align: center;
+      margin-top: 60px;
     }
-    a {
+    .button {
       display: inline-block;
       background-color: #a855f7;
       color: white;
-      padding: 10px 20px;
+      padding: 12px 30px;
       text-decoration: none;
       border-radius: 5px;
-      margin-top: 10px;
+      font-weight: bold;
+      transition: background-color 0.2s;
     }
-    a:hover {
+    .button:hover {
       background-color: #9333ea;
+    }
+    footer {
+      text-align: center;
+      margin-top: 80px;
+      color: #9ca3af;
+      font-size: 0.9rem;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>ROK AI Interactive</h1>
-    <p>Welcome to our financial intelligence platform. We're currently updating our site to provide you with the best experience.</p>
-    <p>Our platform offers powerful AI-driven insights for financial analysis and trading strategies.</p>
-    <div class="cta">
-      <p>Stay tuned for our full feature launch coming soon.</p>
-      <a href="mailto:contact@rok-ai.com">Contact Us</a>
+    <header>
+      <h1>ROK AI Interactive</h1>
+      <p class="tagline">AI-Powered Financial Intelligence Platform</p>
+    </header>
+
+    <div class="features">
+      <div class="feature">
+        <h2>Market Analysis</h2>
+        <p>Harness the power of AI to analyze market trends and identify profitable trading opportunities with precision and speed.</p>
+      </div>
+      <div class="feature">
+        <h2>Portfolio Management</h2>
+        <p>Track and optimize your investment portfolio with intelligent suggestions based on your risk profile and goals.</p>
+      </div>
+      <div class="feature">
+        <h2>Automated Trading</h2>
+        <p>Set up automated trading strategies backed by advanced algorithms and real-time market data.</p>
+      </div>
     </div>
+
+    <div class="cta">
+      <p>Our platform is currently being updated to provide you with the best possible experience.</p>
+      <p>Stay tuned for our full feature launch coming soon.</p>
+      <a href="mailto:contact@rok-ai.com" class="button">Contact Us</a>
+    </div>
+
+    <footer>
+      <p>&copy; 2025 ROK AI Interactive. All rights reserved.</p>
+    </footer>
   </div>
 </body>
 </html>
