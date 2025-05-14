@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>ROK AI Interactive</title>
   <style>
     body {
@@ -104,7 +107,25 @@
 
     <footer>
       <p>&copy; 2025 ROK AI Interactive. All rights reserved.</p>
+      <!-- Force browser cache refresh -->
+      <p style="display:none;">Version: 1.0.1</p>
     </footer>
   </div>
+
+  <!-- Force reload script -->
+  <script>
+    if (window.localStorage) {
+      const lastVersion = localStorage.getItem('site-version');
+      const currentVersion = '1.0.1';
+      
+      if (lastVersion !== currentVersion) {
+        localStorage.setItem('site-version', currentVersion);
+        // Force a hard reload if version changed
+        if (lastVersion) {
+          window.location.reload(true);
+        }
+      }
+    }
+  </script>
 </body>
 </html>
