@@ -220,7 +220,7 @@ export async function fetchAndCalculatePnl(
     let pageCount = 0;
     let currentAfterISO = startDate.toISOString();
     const fetchUntilISO = endDate.toISOString();
-    const pageSize = 100; // Define page size here for reuse
+    const pageSizeParam = 100; // Define page size here for reuse (Alpaca SDK expects pageSize)
 
     try {
         while (pageCount < MAX_PAGES) {
@@ -228,7 +228,19 @@ export async function fetchAndCalculatePnl(
             let retries = 0;
             let success = false;
             let activityPage: any[] = [];
-            const params = { activity_types: ['FILL'], direction: 'asc', after: currentAfterISO, until: fetchUntilISO, page_size: pageSize };
+            
+            // Corrected params object with camelCase properties
+            const params = { 
+                activityTypes: ['FILL'], // Corrected from activity_types
+                direction: 'asc', 
+                after: currentAfterISO, 
+                until: fetchUntilISO, 
+                pageSize: pageSizeParam // Corrected from page_size
+                // The Alpaca SDK type also includes 'date' and 'pageToken' as optional.
+                // If you don't need them, they can be omitted.
+                // date: undefined, 
+                // pageToken: undefined, 
+            };
 
             while (retries < MAX_RETRIES && !success) {
                 try {
@@ -242,28 +254,29 @@ export async function fetchAndCalculatePnl(
                     if ((errorCode === 'ECONNRESET' || errorMessage.includes('socket hang up') || errorCode === 429 || errorMessage.includes('rate limit')) && retries < MAX_RETRIES) {
                         await delay(RETRY_DELAY);
                     } else {
-                         const error_msg = `API Error page ${pageCount}: ${errorMessage}`;
-                         fetchErrors.push(error_msg);
-                         console.error(`Failed to fetch page ${pageCount} after ${retries} attempts.`);
-                         success = true; // Stop retrying this page
-                         activityPage = [];
-                         if (errorMessage.includes("after is in an invalid format") || errorCode === 422) {
-                             console.log("Stopping pagination due to invalid timestamp or 422 error.");
-                             break; // Break retry loop
-                         }
+                        const error_msg = `API Error page ${pageCount}: ${errorMessage}`;
+                        fetchErrors.push(error_msg);
+                        console.error(`Failed to fetch page ${pageCount} after ${retries} attempts.`);
+                        success = true; // Stop retrying this page
+                        activityPage = [];
+                        if (errorMessage.includes("after is in an invalid format") || errorCode === 422) {
+                            console.log("Stopping pagination due to invalid timestamp or 422 error.");
+                            break; // Break retry loop
+                        }
                     }
                 }
             } // End retry while loop
 
             if (!activityPage || activityPage.length === 0) {
-                 if (success) console.log(`Page ${pageCount} empty or pagination stopped.`);
-                 break; // Break page loop
+                if (success) console.log(`Page ${pageCount} empty or pagination stopped.`);
+                break; // Break page loop
             }
 
             allActivities.push(...activityPage);
 
             const lastActivity = activityPage[activityPage.length - 1];
-            const lastActivityTimeObj = lastActivity?.transaction_time || lastActivity?.timestamp;
+            // Use a more robust way to get the timestamp, checking common Alpaca API fields
+            const lastActivityTimeObj = lastActivity?.transaction_time || lastActivity?.timestamp || lastActivity?.submitted_at || lastActivity?.created_at;
             if (lastActivityTimeObj) {
                 try {
                     const lastTsAware = dayjs(lastActivityTimeObj).utc().toDate();
@@ -272,11 +285,11 @@ export async function fetchAndCalculatePnl(
                 } catch (ts_e) { fetchErrors.push(`Timestamp parse error: ${ts_e}`); console.error(`TS parse error: ${ts_e}. Stopping.`); break; }
             } else { console.warn("Last activity no timestamp. Stopping pagination."); break; }
 
-            if (activityPage.length < pageSize) {
+            if (activityPage.length < pageSizeParam) { // Use pageSizeParam for comparison
                 console.log("Received less than page size, assuming end of activities.");
                 break; // Break page loop
             }
-            await delay(200);
+            await delay(200); // Rate limiting delay
         } // End page while loop
 
         console.log(`Fetched ${allActivities.length} total fill activities across ${pageCount} page(s).`);
@@ -288,11 +301,12 @@ export async function fetchAndCalculatePnl(
         let parseErrors = 0;
         allActivities.forEach(act => {
             try {
-                if (String(act.activity_type).toUpperCase() === 'FILL' && act.symbol && act.qty && act.price && act.transaction_time && act.side && act.order_id) {
+                // Ensure all necessary fields are present before processing a fill
+                if (String(act.activity_type).toUpperCase() === 'FILL' && act.symbol && act.qty && act.price && (act.transaction_time || act.timestamp) && act.side && act.order_id) {
                     const symbol = act.symbol;
                     if (!fillsBySymbol[symbol]) fillsBySymbol[symbol] = [];
                     fillsBySymbol[symbol].push({
-                        timestamp: dayjs(act.transaction_time).utc().toDate(),
+                        timestamp: dayjs(act.transaction_time || act.timestamp).utc().toDate(), // Prefer transaction_time
                         side: act.side as 'buy' | 'sell',
                         qty: parseFloat(act.qty),
                         price: parseFloat(act.price),
