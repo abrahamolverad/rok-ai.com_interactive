@@ -1,53 +1,29 @@
 {
-  "name": "rokai-interactive",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start -p $PORT",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "@alpacahq/alpaca-trade-api": "^3.1.3",
-    "@blakeembrey/deque": "^1.0.5",
-    "@react-three/fiber": "^8.15.12",
-    "@react-three/drei": "^9.92.7",
-    "@studio-freight/lenis": "^1.0.42",
-    "@tailwindcss/postcss": "^4.1.6",
-    "autoprefixer": "^10.4.20",
-    "bcryptjs": "^3.0.2",
-    "dayjs": "^1.11.13",
-    "framer-motion": "^12.8.0",
-    "gsap": "^3.12.7",
-    "lenis": "^1.3.1",
-    "mongodb": "^6.16.0",
-    "mongoose": "^8.13.2",
-    "next": "14.2.3",
-    "next-auth": "4.24.11",
-    "papaparse": "^5.5.2",
-    "plotly.js": "^3.0.1",
-    "postcss": "^8.4.38",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "react-plotly.js": "^2.6.0",
-    "swr": "^2.3.3",
-    "three": "0.170.0",
-    "three-mesh-bvh": "0.8.0",
-    "tailwindcss": "^4.0.2",
-    "typescript": "^5.8.3",
-    "zustand": "^5.0.3"
-  },
-  "devDependencies": {
-    "@eslint/eslintrc": "^3.0.0",
-    "@types/node": "^20.12.12",
-    "@types/papaparse": "^5.3.15",
-    "@types/react": "18.2.49",
-    "@types/react-dom": "18.2.17",
-    "eslint": "^9.3.0",
-    "eslint-config-next": "14.2.3"
-  },
-  "overrides": {
-    "three": "0.170.0"
-  }
+    "name": "rokai-interactive",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build --no-lint",
+        "start": "next start -p %PORT%",
+        "start-render": "next start -p \\"
+    },
+    "dependencies": {
+        "@alpacahq/alpaca-trade-api": "^3.1.3",
+        "dayjs": "1.11.11",
+        "next": "15.3.2",
+        "papaparse": "5.5.2",
+        "plotly.js": "2.32.0",
+        "react": "18.3.1",
+        "react-dom": "18.3.1",
+        "react-plotly.js": "2.6.0",
+        "swr": "2.2.2"
+    },
+    "devDependencies": {
+        "@types/react": "19.1.4",
+        "autoprefixer": "^10.4.19",
+        "postcss": "^8.4.38",
+        "tailwindcss": "^3.4.4",
+        "typescript": "5.8.3"
+    }
 }
