@@ -1,24 +1,21 @@
 {
-    "name":  "rokai-interactive",
-    "version":  "0.1.0",
-    "private":  true,
-    "scripts":  {
-                    "dev":  "next dev",
-                    "build":  "next build --no-lint",
-                    "start":  "next start -p %PORT%",
-                    "start-render":  "next start -p \\"
-                },
-    "dependencies":  {
-                         "dayjs":  "1.11.11",
-                         "next":  "14.0.4",
-                         "react":  "18.2.0",
-                         "react-dom":  "18.2.0"
-                     },
-    "devDependencies":  {
-                            "@types/react":  "19.1.4",
-                            "autoprefixer":  "^10.4.19",
-                            "postcss":  "^8.4.38",
-                            "tailwindcss":  "^3.4.4",
-                            "typescript":  "5.8.3"
-                        }
+  "name": "rokai-interactive",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -p %PORT%",
+    "start-render": "next start -p $PORT"
+  },
+  "dependencies": {
+    "next": "14.0.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.4",
+    "postcss": "8.4.38",
+    "autoprefixer": "10.4.19"
+  }
 }

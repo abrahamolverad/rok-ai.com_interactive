@@ -5,8 +5,9 @@ FROM base AS deps
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json ./
+# Use npm install instead of npm ci to update package-lock.json
+RUN npm install
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -48,5 +49,5 @@ EXPOSE 3000
 
 ENV PORT 3000
 
-# Start the application - environment variables will be passed at runtime
+# Start the application
 CMD ["node", "server.js"]
