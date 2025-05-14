@@ -1,12 +1,21 @@
+// src/components/DataStream.tsx
 "use client";
 
 import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useAppStore } from '@/lib/store';
+import * as THREE from 'three'; // Import THREE
 
-export function DataStream({ position }) {
-  const streamRef = useRef();
-  const particlesRef = useRef();
+// Define props if you expect any, e.g., position
+interface DataStreamProps {
+  position?: [number, number, number]; // Optional position prop
+}
+
+export function DataStream({ position }: DataStreamProps) {
+  // Provide explicit types for the refs
+  const streamRef = useRef<THREE.Group | null>(null);
+  const particlesRef = useRef<THREE.Points | null>(null);
+
   const hasInteracted = useAppStore((state) => state.hasInteracted);
   const currentSection = useAppStore((state) => state.currentSection);
   
@@ -22,7 +31,7 @@ export function DataStream({ position }) {
     const radius = Math.random() * 3;
     
     particlePositions[i3] = Math.cos(angle) * radius;
-    particlePositions[i3 + 1] = (Math.random() - 0.5) * 20;
+    particlePositions[i3 + 1] = (Math.random() - 0.5) * 20; // y-position spread
     particlePositions[i3 + 2] = Math.sin(angle) * radius;
     
     // Vary particle sizes
@@ -31,14 +40,24 @@ export function DataStream({ position }) {
   
   // Animation
   useFrame((state, delta) => {
-    if (!streamRef.current || !particlesRef.current) return;
+    // Ensure refs are current and have the expected properties before using them
+    if (!streamRef.current || !particlesRef.current || !particlesRef.current.geometry || !particlesRef.current.material) {
+        return;
+    }
     
+    // Type assertion for material if needed, or ensure it's the correct type
+    const material = particlesRef.current.material as THREE.PointsMaterial;
+
     // Rotate the entire stream
     const rotationSpeed = hasInteracted ? 0.2 : 0.05;
     streamRef.current.rotation.y += rotationSpeed * delta;
     
     // Animate particles based on section
-    const positions = particlesRef.current.geometry.attributes.position.array;
+    // Make sure geometry.attributes.position exists and is a BufferAttribute
+    const positionAttribute = particlesRef.current.geometry.attributes.position as THREE.BufferAttribute;
+    if (!positionAttribute) return;
+
+    const positions = positionAttribute.array as Float32Array;
     
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
@@ -58,19 +77,22 @@ export function DataStream({ position }) {
       }
     }
     
-    particlesRef.current.geometry.attributes.position.needsUpdate = true;
+    positionAttribute.needsUpdate = true;
     
     // Change color based on section
-    if (currentSection === 'home') {
-      particlesRef.current.material.color.set('#0066ff');
-    } else if (currentSection === 'about') {
-      particlesRef.current.material.color.set('#00ccff');
-    } else if (currentSection === 'trading') {
-      particlesRef.current.material.color.set('#ff3366');
-    } else if (currentSection === 'solutions') {
-      particlesRef.current.material.color.set('#33cc99');
-    } else if (currentSection === 'contact') {
-      particlesRef.current.material.color.set('#9966ff');
+    // Ensure material has a 'color' property and it's a THREE.Color
+    if (material.color instanceof THREE.Color) {
+        if (currentSection === 'home') {
+            material.color.set('#0066ff');
+        } else if (currentSection === 'about') {
+            material.color.set('#00ccff');
+        } else if (currentSection === 'trading') {
+            material.color.set('#ff3366');
+        } else if (currentSection === 'solutions') {
+            material.color.set('#33cc99');
+        } else if (currentSection === 'contact') {
+            material.color.set('#9966ff');
+        }
     }
   });
   
@@ -85,19 +107,19 @@ export function DataStream({ position }) {
             itemSize={3}
           />
           <bufferAttribute
-            attach="attributes-size"
+            attach="attributes-size" // For custom shader if you use particle sizes
             count={particleCount}
             array={particleSizes}
             itemSize={1}
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.2}
+          size={0.2} // This size is fixed if not using attributes-size in shader
           sizeAttenuation={true}
           depthWrite={false}
           transparent={true}
           opacity={0.8}
-          color="#0066ff"
+          color="#0066ff" // Initial color
         />
       </points>
     </group>
