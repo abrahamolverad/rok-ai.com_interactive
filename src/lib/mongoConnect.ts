@@ -1,69 +1,77 @@
 // src/lib/mongoConnect.ts
-import mongoose from 'mongoose';
+//
+// Centralised MongoDB connection helper for Next.js 14 (App Router).
+// It caches the connection across hot‑reloads and API route calls, and
+// *skips* the MONGODB_URI guard during `next build` so Docker builds
+// on Render don’t fail when runtime env‑vars aren’t yet injected.
+//
+import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const { MONGODB_URI = "", NEXT_PHASE } = process.env;
 
-if (!MONGODB_URI) {
+/**
+ * During `next build` (phase‑production‑build) Render doesn’t inject
+ * runtime environment variables.  Skip the guard so the build can
+ * finish; the real connection happens when the server starts
+ * (phase‑production‑server).
+ */
+const isBuildPhase = NEXT_PHASE === "phase-production-build";
+
+if (!isBuildPhase && !MONGODB_URI) {
   throw new Error(
-    'Please define the MONGODB_URI environment variable inside .env.local or your deployment environment'
+    "Please define a MONGODB_URI in the Render Environment tab."
   );
 }
 
 /**
- * Global is used here to maintain a cached connection across hot reloads
- * in development. This prevents connections from growing exponentially
- * during API Route usage.
+ * The Node.js global type is extended (only at dev time via `declare`) so
+ * cached connections persist across hot reloads in `next dev`.
  */
-// Extend the NodeJS.Global interface to include mongoose
 declare global {
   // eslint-disable-next-line no-var
-  var mongooseDB: { // Renamed to avoid conflict with mongoose import
+  var _mongooseCache: {
     conn: typeof mongoose | null;
     promise: Promise<typeof mongoose> | null;
   };
 }
 
-let cached = global.mongooseDB;
-
+let cached = global._mongooseCache;
 if (!cached) {
-  cached = global.mongooseDB = { conn: null, promise: null };
+  cached = global._mongooseCache = { conn: null, promise: null };
 }
 
-async function dbConnect(): Promise<typeof mongoose> {
+export async function mongoConnect(): Promise<typeof mongoose> {
   if (cached.conn) {
-    console.log('MongoDB: Using cached connection.');
+    if (process.env.NODE_ENV === "development") {
+      console.log("MongoDB ▶︎ using cached connection");
+    }
     return cached.conn;
   }
 
   if (!cached.promise) {
     const opts = {
-      bufferCommands: false, // Disable mongoose buffering
-    };
+      bufferCommands: false, // disable mongoose command buffering
+    } as const;
 
-    console.log('MongoDB: Creating new connection...');
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongooseInstance) => {
-      console.log('MongoDB: Connection successful!');
-      return mongooseInstance;
-    }).catch(error => {
-      console.error('MongoDB: Connection error:', error);
-      cached.promise = null; // Reset promise on error
-      throw error; 
-    });
+    if (process.env.NODE_ENV === "development") {
+      console.log("MongoDB ▶︎ creating new connection…");
+    }
+
+    cached.promise = mongoose
+      .connect(MONGODB_URI, opts)
+      .then((m) => {
+        console.log("MongoDB ▶︎ connection successful ✅");
+        return m;
+      })
+      .catch((err) => {
+        console.error("MongoDB ▶︎ connection error ❌", err);
+        cached.promise = null; // reset so next call retries
+        throw err;
+      });
   }
 
-  try {
-    cached.conn = await cached.promise;
-  } catch (e) {
-    cached.promise = null; 
-    throw e; 
-  }
-  
-  if (!cached.conn) {
-    // This case should ideally not be reached if connect throws on failure.
-    // But as a safeguard:
-    throw new Error("MongoDB connection failed and was not established.");
-  }
+  cached.conn = await cached.promise;
   return cached.conn;
 }
 
-export default dbConnect;
+export default mongoConnect;
