@@ -1,9 +1,9 @@
-// src/lib/authOptions.ts
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google"; // Keep if you plan to use it
 import dbConnect from '@/lib/mongoConnect'; // Import your MongoDB connection utility
 import { User } from '@/models/User';   // Import your Mongoose User model (from user_model_ts_v2)
+import bcrypt from 'bcryptjs';
 
 // Helper to conditionally include GoogleProvider
 function getGoogleProvider() {
@@ -48,14 +48,14 @@ export const authOptions: NextAuthOptions = {
             throw new Error("No user found with this email.");
           }
           
-          // Ensure the user document has a passwordHash (it should if created correctly)
-          if (!user.passwordHash) {
-            console.error("Authorize: User found but has no passwordHash:", user.email);
+          // Ensure the user document has a password field
+          if (!user.password) {
+            console.error("Authorize: User found but has no password field:", user.email);
             throw new Error("Authentication setup error for this user."); // Avoid exposing details
           }
           
           // Compare the provided password with the stored hashed password
-          const isPasswordValid = await user.comparePassword(credentials.password);
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
 
           if (!isPasswordValid) {
             console.log("Authorize: Invalid password for user:", user.email);
@@ -75,7 +75,6 @@ export const authOptions: NextAuthOptions = {
         } catch (error: any) {
           console.error("Authorize error during DB operations:", error.message);
           // Rethrow a generic error or the specific error message to be handled by NextAuth
-          // This message might be displayed on the login form or an error page.
           throw new Error(error.message || "Authentication failed due to a server error.");
         }
       }
@@ -96,21 +95,14 @@ export const authOptions: NextAuthOptions = {
       // Persist the user ID (and any other custom properties) to the JWT token.
       if (user) {
         token.id = user.id; // user.id is the string version of MongoDB _id
-        // token.name = user.name; // Default behavior includes name if present in user object
-        // token.email = user.email; // Default behavior includes email if present in user object
-        // Example: if you have a 'role' property on your User model and returned it from authorize:
-        // token.role = (user as any).role; 
       }
       return token;
     },
     async session({ session, token }) {
       // The 'token' object is what was returned from the jwt callback.
       // Add properties from the token to the client-side session object.
-      // Ensure your types/next-auth.d.ts correctly defines session.user.id and other custom properties.
       if (token.id && session.user) {
         (session.user as { id: string; name?: string | null; email?: string | null; image?: string | null }).id = token.id as string;
-        // Example: if you added 'role' to the token:
-        // (session.user as any).role = token.role; 
       }
       return session;
     },
@@ -120,3 +112,5 @@ export const authOptions: NextAuthOptions = {
   // Enable debug messages in the console if you are having problems, especially in development
   debug: process.env.NODE_ENV === 'development',
 };
+
+export default authOptions;
