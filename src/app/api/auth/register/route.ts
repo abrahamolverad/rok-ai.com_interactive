@@ -1,30 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import { mongoConnect } from "@/lib/mongoConnect";
-import User from "@/models/User";
+import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { mongoConnect } from '@/lib/mongoConnect';
+import User from '@/models/User';
 
-/**
- * POST /api/auth/register
- * Body: { email: string, password: string }
- */
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = (await req.json()) as {
-      email?: string;
-      password?: string;
-    };
+    const { email, password } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: 'Email and password are required' },
         { status: 400 }
       );
     }
 
-    // Basic strength check – adjust as needed
     if (password.length < 8) {
       return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
+        { error: 'Password must be at least 8 characters' },
         { status: 400 }
       );
     }
@@ -34,23 +26,23 @@ export async function POST(req: NextRequest) {
     const existing = await User.findOne({ email });
     if (existing) {
       return NextResponse.json(
-        { error: "Email already in use" },
+        { error: 'Email already in use' },
         { status: 409 }
       );
     }
 
-    const hash = await bcrypt.hash(password, 12); // 12 salt rounds
-    const user = await User.create({ email, password: hash });
+    const hashed = await bcrypt.hash(password, 12);
+    const user = await User.create({ email, password: hashed });
 
     return NextResponse.json(
-      { message: "User registered", userId: user._id },
+      { message: 'User registered', userId: user._id },
       { status: 201 }
     );
-  } catch (err) {
-    console.error("Register error", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    console.error('Registration error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// (optional) Limit the endpoint to POST only
-export const dynamic = "force-dynamic"
+// ⛔ THIS IS IMPORTANT! Prevents static optimization issues
+export const dynamic = 'force-dynamic';
