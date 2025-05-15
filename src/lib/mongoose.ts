@@ -1,35 +1,31 @@
 import mongoose from 'mongoose';
 
 /**
- * Re-usable server-side helper that keeps a single MongoDB connection
- * across hot-reloads (Next.js) and serverless invocations (Render).
+ * Re-usable helper that keeps a single MongoDB connection across
+ * hot-reloads (Next.js dev) and serverless invocations (Render).
+ *
+ * Key change: we only check MONGODB_URI *when connectDb() is called*,
+ * so next build can import the file even if the env var isn’t set yet.
  */
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
-
-if (!MONGODB_URI) {
-  throw new Error('❌  Missing MONGODB_URI environment variable');
-}
-
-// Global is used here to maintain a cached connection in dev / hot-reload
 let cached: {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
-} = (global as any).mongooseCache;
+} = (global as any).mongooseCache ?? { conn: null, promise: null };
 
-if (!cached) {
-  cached = { conn: null, promise: null };
-  (global as any).mongooseCache = cached;
-}
+(global as any).mongooseCache = cached;
 
 export async function connectDb() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error('❌  Missing MONGODB_URI environment variable');
+  }
+
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
     cached.promise = mongoose
-      .connect(MONGODB_URI, {
-        bufferCommands: false,
-      })
+      .connect(uri, { bufferCommands: false })
       .then((m) => m);
   }
 
