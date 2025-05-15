@@ -1,75 +1,85 @@
-// src/app/register/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
   const router = useRouter();
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    setLoading(true);
+    setError(null);
 
-    const data = await res.json();
-    if (res.ok) {
-      setMessage('Registered! Redirecting to login...');
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+
+      if (!res.ok) {
+        const { error } = await res.json();
+        throw new Error(error ?? 'Registration failed');
+      }
+
       router.push('/login');
-    } else {
-      setMessage(data.error || 'Registration failed');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-8 bg-black">
-      <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-rokPurple mb-6 text-center">Create Account</h1>
-        <div className="bg-rokGrayDark p-6 rounded-xl border border-rokGrayBorder">
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block text-rokGrayText mb-1">Email</label>
-              <input 
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-2 rounded bg-rokGrayInput border border-rokGrayBorder text-rokIvory"
-                placeholder="Enter your email"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-rokGrayText mb-1">Password</label>
-              <input 
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-2 rounded bg-rokGrayInput border border-rokGrayBorder text-rokIvory"
-                placeholder="Create a password"
-              />
-            </div>
-            <button 
-              type="submit" 
-              className="w-full bg-rokPurple text-white py-2 px-4 rounded hover:bg-purple-700 transition"
-            >
-              Register
-            </button>
-          </form>
-          <div className="mt-4 text-center">
-            <p className="text-rokGrayText">
-              Already have an account? <a href="/login" className="text-rokPurple hover:underline">Login</a>
-            </p>
-            {message && <p className="mt-2 text-sm text-red-400">{message}</p>}
-          </div>
-        </div>
-      </div>
-    </div>
+    <main className="max-w-md mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Create account</h1>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          className="w-full border p-2 rounded"
+          name="name"
+          placeholder="Name"
+          value={form.name}
+          onChange={handleChange}
+          required
+        />
+        <input
+          className="w-full border p-2 rounded"
+          type="email"
+          name="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
+        <input
+          className="w-full border p-2 rounded"
+          type="password"
+          name="password"
+          placeholder="Password (min 6 chars)"
+          minLength={6}
+          value={form.password}
+          onChange={handleChange}
+          required
+        />
+
+        {error && <p className="text-red-600">{error}</p>}
+
+        <button
+          className="w-full bg-black text-white p-2 rounded disabled:opacity-50"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? 'Creating…' : 'Sign up'}
+        </button>
+      </form>
+    </main>
   );
 }
