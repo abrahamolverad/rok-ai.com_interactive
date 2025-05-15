@@ -25,7 +25,7 @@ WORKDIR /app
 
 # Copy node_modules from the 'deps' stage
 COPY --from=deps /app/node_modules ./node_modules
-# Copy all other source files
+# Copy all other source files (including next.config.js)
 COPY . .
 
 # Disable Next.js telemetry during the build
@@ -33,6 +33,10 @@ ENV NEXT_TELEMETRY_DISABLED 1
 
 # Run the Next.js build script (defined in your package.json)
 RUN npm run build
+
+# --- DEBUGGING STEP: List contents of .next directory ---
+RUN echo "Contents of /app/.next after build:" && ls -la /app/.next/
+# --- END DEBUGGING STEP ---
 
 # Stage 3: Production image
 # Use a lean Node.js Alpine image for the final production stage
