@@ -3,7 +3,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google"; // Keep if you plan to use it
 import dbConnect from '@/lib/mongoConnect'; // Import your MongoDB connection utility
-import User from '@/models/User';   // Import your Mongoose User model (from user_model_ts_v2)
+import { User } from '@/models/User';   // Import your Mongoose User model (from user_model_ts_v2)
 
 // Helper to conditionally include GoogleProvider
 function getGoogleProvider() {
