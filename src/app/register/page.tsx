@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -24,10 +24,8 @@ export default function RegisterPage() {
         body: JSON.stringify(form),
       });
 
-      if (!res.ok) {
-        const { error } = await res.json();
-        throw new Error(error ?? 'Registration failed');
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Registration failed');
 
       router.push('/login');
     } catch (err: any) {
@@ -38,48 +36,68 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="max-w-md mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Create account</h1>
+    <main className="flex min-h-screen items-center justify-center bg-black p-8">
+      <div className="w-full max-w-md">
+        <h1 className="text-3xl font-bold text-rokPurple mb-6 text-center">Register for ROK AI</h1>
+        <div className="bg-rokGrayDark p-6 rounded-xl border border-rokGrayBorder">
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div>
+              <label htmlFor="name" className="block text-rokGrayText mb-1">Name</label>
+              <input
+                id="name"
+                type="text"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                className="w-full p-2 rounded bg-rokGrayInput border border-rokGrayBorder text-rokIvory"
+                placeholder="Your name"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="email" className="block text-rokGrayText mb-1">Email</label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                className="w-full p-2 rounded bg-rokGrayInput border border-rokGrayBorder text-rokIvory"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-rokGrayText mb-1">Password</label>
+              <input
+                id="password"
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                className="w-full p-2 rounded bg-rokGrayInput border border-rokGrayBorder text-rokIvory"
+                placeholder="Create a password"
+                required
+              />
+            </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          className="w-full border p-2 rounded"
-          name="name"
-          placeholder="Name"
-          value={form.name}
-          onChange={handleChange}
-          required
-        />
-        <input
-          className="w-full border p-2 rounded"
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          className="w-full border p-2 rounded"
-          type="password"
-          name="password"
-          placeholder="Password (min 6 chars)"
-          minLength={6}
-          value={form.password}
-          onChange={handleChange}
-          required
-        />
+            {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        {error && <p className="text-red-600">{error}</p>}
-
-        <button
-          className="w-full bg-black text-white p-2 rounded disabled:opacity-50"
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? 'Creating…' : 'Sign up'}
-        </button>
-      </form>
+            <button
+              type="submit"
+              className="w-full bg-rokPurple text-white py-2 px-4 rounded hover:bg-purple-700 transition"
+              disabled={loading}
+            >
+              {loading ? 'Creating…' : 'Create Account'}
+            </button>
+          </form>
+          <div className="mt-4 text-center">
+            <p className="text-rokGrayText">
+              Already have an account? <a href="/login" className="text-rokPurple hover:underline">Log in</a>
+            </p>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }
