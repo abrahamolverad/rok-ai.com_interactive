@@ -352,3 +352,15 @@ export async function fetchAndCalculatePnl(
         return { data: [], fetchErrors };
     }
 }
+// ✅ Export for dashboard API
+export async function getAccountAndPositions() {
+    const alpaca = new Alpaca({
+      keyId: process.env.ALPACA_KEY_ID!,
+      secretKey: process.env.ALPACA_SECRET_KEY!,
+      paper: true,
+    });
+  
+    const { data: positions } = await getOpenPositions(alpaca);
+    return { positions };
+  }
+  
