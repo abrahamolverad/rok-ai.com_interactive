@@ -74,7 +74,8 @@ export default function DashboardClient() {
   }, [symbolFilter, timeFrame, start, end, strategy]);
 
   const dashboardUrl = useMemo(() => {
-    const qs = new URLSearchParams({ start, end, symbol: symbolFilter });
+    const qs = new URLSearchParams({ start, end });
+    if (symbolFilter !== "ALL") qs.append("symbol", symbolFilter);
     return `/api/dashboard?${qs.toString()}`;
   }, [start, end, symbolFilter]);
 
