@@ -48,3 +48,15 @@ export function SelectItem({
 export function SelectValue({ children }: { children: React.ReactNode }) {
   return <span>{children}</span>;
 }
+// -----------------------------------------------------------------------------
+//  Simple wrapper so `import { Select, … }` works
+// -----------------------------------------------------------------------------
+export function Select({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) {
+    return (
+      <div
+        {...props}
+        className={cn("relative inline-block w-full", className)}
+      />
+    );
+  }
+  
