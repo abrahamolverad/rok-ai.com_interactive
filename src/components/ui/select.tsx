@@ -1,11 +1,11 @@
 import { cn } from "./cn";
 
 /* ---------------------------------------------------------------------------
-   Minimal headless-UI Select primitives so the Dashboard can compile.
-   They accept the same props the page already passes but don't implement
-   open/close logic—you can layer a real menu library later.
+   Minimal, headless Select primitives so the Dashboard compiles.
+   No pop-up logic yet; you can add radix-popover or headless-ui later.
 ---------------------------------------------------------------------------*/
 
+/** Root wrapper — accepts value/onValueChange for type-safety only */
 type SelectProps = React.HTMLAttributes<HTMLDivElement> & {
   value?: string;
   onValueChange?: (value: string) => void;
@@ -13,14 +13,15 @@ type SelectProps = React.HTMLAttributes<HTMLDivElement> & {
 
 export function Select({
   className = "",
-  value,           // accepted for TS-type safety
-  onValueChange,   // accepted for TS-type safety
+  value,
+  onValueChange,
   ...props
 }: SelectProps) {
   return (
     <div
       {...props}
       className={cn("relative inline-block w-full", className)}
+      data-value={value ?? ""}
     />
   );
 }
@@ -42,7 +43,7 @@ export function SelectTrigger({
   );
 }
 
-/* ──────────────────────── Dropdown container ─────────────────────────────── */
+/* ─────────────────────── Dropdown container (menu) ──────────────────────── */
 export function SelectContent({
   className = "",
   ...props
@@ -59,7 +60,7 @@ export function SelectContent({
   );
 }
 
-/* ───────────────────────────── Option row ────────────────────────────────── */
+/* ───────────────────────────── Option row ───────────────────────────────── */
 export function SelectItem({
   className = "",
   ...props
@@ -75,7 +76,16 @@ export function SelectItem({
   );
 }
 
-/* ───────────────────────────── Value text ────────────────────────────────── */
-export function SelectValue({ children }: { children: React.ReactNode }) {
-  return <span>{children}</span>;
+/* ──────────────────────── Value (selected text) ─────────────────────────── */
+type SelectValueProps = {
+  children?: React.ReactNode;
+  placeholder?: string;
+};
+
+export function SelectValue({ children, placeholder }: SelectValueProps) {
+  return (
+    <span className={cn(!children && "text-rokGraySubtle")}>
+      {children ?? placeholder}
+    </span>
+  );
 }
