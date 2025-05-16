@@ -1,31 +1,85 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import Alpaca from '@alpacahq/alpaca-trade-api';
+import dayjs from 'dayjs';
 
-/**
- * Placeholder endpoint so the dashboard loads.
- * Replace the mock numbers with your real DB query later.
- *
- * URL example:
- * /api/dashboard?from=2025-04-16&to=2025-05-16&strategy=Swing&symbol=ALL
- */
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
+  const startDate   = searchParams.get('startDate')!;
+  const endDate     = searchParams.get('endDate')!;
+  const strategy    = searchParams.get('strategy') ?? 'Swing';   // default
 
-  /* You can keep these lines for logging / future validation */
-  const from      = searchParams.get('from')      ?? '';
-  const to        = searchParams.get('to')        ?? '';
-  const strategy  = searchParams.get('strategy')  ?? '';
-  const symbol    = searchParams.get('symbol')    ?? 'ALL';
+  /* ---- pick creds / algo per strategy ------------------------------ */
+  let alpaca: any;
+  switch (strategy) {
+    case 'Day':
+      alpaca = new Alpaca({
+        keyId:     process.env.ALPACA_DAY_KEY!,
+        secretKey: process.env.ALPACA_DAY_SECRET!,
+        paper:     true,
+      });
+      break;
+    case 'Options':
+      alpaca = new Alpaca({
+        keyId:     process.env.ALPACA_OPTIONS_KEY!,
+        secretKey: process.env.ALPACA_OPTIONS_SECRET!,
+        paper:     true,
+      });
+      break;
+    default: // 'Swing'
+      alpaca = new Alpaca({
+        keyId:     process.env.ALPACA_SWING_KEY!,
+        secretKey: process.env.ALPACA_SWING_SECRET!,
+        paper:     true,
+      });
+  }
 
-  /* ---- MOCK DATA (replace later) --------------------------------------- */
-  const summary = { realized: 0, unrealized: 283.01, marketValue: 88864.34 };
+  /* ---- open positions --------------------------------------------- */
+  const acct = await alpaca.getAccount();
+  const positionsResp = await alpaca.getPositions();
+  const openPositions = positionsResp.map((p: any) => ({
+    Symbol: p.symbol,
+    Qty: Number(p.qty),
+    'Avg Entry Price': Number(p.avg_entry_price),
+    'Current Price':   Number(p.current_price),
+    'Market Value':    Number(p.market_value),
+    'Unrealized P&L':  Number(p.unrealized_pl),
+  }));
 
-  const equityCurve = [
-    { date: from || '2025-04-16', pnl: 0 },
-    { date:  to  || '2025-05-16', pnl: 283.01 },
-  ];
+  /* ---- closed (realized) trades ----------------------------------- */
+  // Alpaca v2 activities endpoint
+  const acts = await alpaca.getActivities({
+    activity_type: 'FILL',
+    direction: 'desc',
+    after:  dayjs(startDate).toISOString(),
+    until:  dayjs(endDate).endOf('day').toISOString(),
+  });
 
-  const positions: any[] = [];   // empty list for now
-  /* ---------------------------------------------------------------------- */
+  const realizedTrades = acts
+    .filter((a: any) => a.side === 'sell' || a.side === 'sell_short')
+    .map((a: any) => ({
+      Symbol:     a.symbol,
+      Type:       a.side === 'sell' ? 'Long' : 'Short',
+      EntryTime:  a.transaction_time,          // simplify – real app should pair fills
+      ExitTime:   a.transaction_time,
+      Qty:        Number(a.qty),
+      EntryPrice: Number(a.price),             // placeholder
+      ExitPrice:  Number(a.price),
+      Pnl:        Number(a.net_amount),        // sign already correct
+    }));
 
-  return NextResponse.json({ summary, equityCurve, positions });
+  /* ---- summaries --------------------------------------------------- */
+  const totalRealized = realizedTrades.reduce((s, t) => s + t.Pnl, 0);
+  const totalUnreal   = openPositions.reduce((s, p) => s + p['Unrealized P&L'], 0);
+  const mktVal        = openPositions.reduce((s, p) => s + p['Market Value'], 0);
+
+  /* ---- respond ----------------------------------------------------- */
+  return NextResponse.json({
+    openPositions,
+    unrealizedPL: totalUnreal,
+    totalMarketValue: mktVal,
+    totalRealizedPL: totalRealized,
+    realizedTrades,
+    fetchErrors: [],
+    dataTimestamp: new Date().toISOString(),
+  });
 }
