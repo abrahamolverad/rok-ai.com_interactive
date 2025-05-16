@@ -18,7 +18,7 @@ dayjs.extend(utc);
 const Plot = dynamic(() => import('react-plotly.js'), {
     ssr: false, // Disable server-side rendering for this component
     loading: () => <div className="text-center py-10 text-gray-400">Loading Chart...</div>
-});
+}) as any;
 
 // --- Local simplified type for Bar Data (if SDK import causes issues) ---
 interface SimpleAlpacaBar {
