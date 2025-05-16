@@ -1,4 +1,4 @@
-'use client'; // Required for useEffect, useState, useSWR
+'use client';
 
 import React, { useState, useMemo } from 'react';
 import useSWR from 'swr';
@@ -9,17 +9,13 @@ import Papa from 'papaparse';
 
 dayjs.extend(utc);
 
-/* ────────────────────────────────────────────────────────── */
-/* Dynamically import Plotly (cast as any to silence TS)      */
 const Plot = dynamic<any>(() => import('react-plotly.js'), {
   ssr: false,
   loading: () => (
     <div className="text-center py-10 text-gray-400">Loading Chart...</div>
   ),
 }) as any;
-/* ────────────────────────────────────────────────────────── */
 
-/* ---------- Local types ---------- */
 interface SimpleAlpacaBar {
   Timestamp: string | Date;
   OpenPrice: number;
@@ -63,7 +59,6 @@ interface DashboardData {
   message?: string;
 }
 
-/* ---------- Fetch helpers ---------- */
 const fetchJson = async <T,>(url: string): Promise<T> => {
   const res = await fetch(url);
   if (!res.ok) {
@@ -78,23 +73,18 @@ const fmt$ = (v: number | null | undefined) =>
     ? '$0.00'
     : v.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
-/* ===================================================================== */
-/*                                COMPONENT                              */
-/* ===================================================================== */
 export default function DashboardClient() {
-  /* ----- State ----- */
   const [startDate, setStart]   = useState(dayjs().subtract(30, 'days').format('YYYY-MM-DD'));
   const [endDate, setEnd]       = useState(dayjs().format('YYYY-MM-DD'));
   const [symbol, setSymbol]     = useState('ALL');
-  const [candleSym, setCandle]  = useState<string | null>(null);
+  const [strategy, setStrategy] = useState('all');  // NEW
+  const [candleSym]             = useState<string | null>(null);
 
-  /* ----- URLs ----- */
-  const dashURL = `/api/alpaca/dashboard?startDate=${startDate}&endDate=${endDate}`;
+  const dashURL = `/api/alpaca/dashboard?startDate=${startDate}&endDate=${endDate}&strategy=${strategy}`;
   const barURL  = candleSym
     ? `/api/alpaca/bars?symbol=${candleSym}&timeframe=1Day`
     : null;
 
-  /* ----- SWR ----- */
   const { data: d, error: de, isLoading: dl, mutate } =
     useSWR<DashboardData>(dashURL, fetchJson, { revalidateOnFocus: false });
 
@@ -104,7 +94,6 @@ export default function DashboardClient() {
       shouldRetryOnError: true,
     });
 
-  /* ---------- Derived lists ---------- */
   const symbols = useMemo(() => {
     if (!d) return ['ALL'];
     const set = new Set<string>();
@@ -143,7 +132,6 @@ export default function DashboardClient() {
     ];
   }, [trades]);
 
-  /* ---------- UI helpers ---------- */
   const colorPL = (v: number) => (v >= 0 ? 'text-green-400' : 'text-red-400');
 
   const downloadCsv = () => {
@@ -163,21 +151,17 @@ export default function DashboardClient() {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url;
-    a.download = `trades_${symbol}_${startDate}_${endDate}.csv`;
+    a.download = `trades_${strategy}_${symbol}_${startDate}_${endDate}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  /* ---------- Loading/error ---------- */
   if (dl) return <div className="text-white p-6">Loading…</div>;
   if (de) return <div className="text-red-400 p-6">Error: {de.message}</div>;
+  if (!d) return null;
 
-  if (!d) return null; // safety
-
-  /* ---------- Render ---------- */
   return (
     <div className="p-4 md:p-6 space-y-6 bg-black text-rokIvory min-h-screen">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <img src="/rok-ai-logo.png" alt="Logo" className="h-10" />
         <h1 className="text-3xl font-bold">Trading Dashboard</h1>
@@ -185,8 +169,7 @@ export default function DashboardClient() {
 
       {/* Filters */}
       <div className="p-4 bg-gray-900 rounded border border-gray-700 mb-6">
-        <div className="grid md:grid-cols-3 gap-4 items-end">
-          {/* Date range */}
+        <div className="grid md:grid-cols-4 gap-4 items-end">
           <div>
             <label className="text-sm text-gray-400">From</label>
             <input
@@ -208,7 +191,6 @@ export default function DashboardClient() {
               max={dayjs().format('YYYY-MM-DD')}
             />
           </div>
-          {/* Symbol */}
           <div>
             <label className="text-sm text-gray-400">Symbol</label>
             <select
@@ -221,6 +203,19 @@ export default function DashboardClient() {
               ))}
             </select>
           </div>
+          <div>
+            <label className="text-sm text-gray-400">Strategy</label>
+            <select
+              value={strategy}
+              onChange={(e) => setStrategy(e.target.value)}
+              className="bg-gray-800 p-2 rounded text-sm w-full"
+            >
+              <option value="all">All</option>
+              <option value="swing">Swing</option>
+              <option value="day">Day</option>
+              <option value="options">Options</option>
+            </select>
+          </div>
         </div>
         <button
           onClick={() => mutate()}
@@ -230,10 +225,10 @@ export default function DashboardClient() {
         </button>
       </div>
 
-      {/* Daily P&L */}
+      {/* Daily P&L Chart */}
       <div className="p-4 bg-gray-900 rounded border border-gray-700">
         <h2 className="text-xl font-semibold mb-3">
-          Daily Realized P&L ({symbol})
+          Daily Realized P&L ({strategy.toUpperCase()} – {symbol})
         </h2>
         {dailyBars.length ? (
           <Plot
@@ -267,12 +262,12 @@ export default function DashboardClient() {
           />
         ) : (
           <p className="text-gray-500 text-center py-10">
-            No data for this period.
+            No data for this strategy/period.
           </p>
         )}
       </div>
 
-      {/* Summary cards */}
+      {/* Summary */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="p-4 bg-gray-900 rounded border border-gray-700 text-center">
           <div className="text-sm text-gray-400 uppercase">Realized P&L</div>
@@ -288,22 +283,17 @@ export default function DashboardClient() {
         </div>
         <div className="p-4 bg-gray-900 rounded border border-gray-700 text-center">
           <div className="text-sm text-gray-400 uppercase">Market Value</div>
-          <div className="text-2xl font-semibold">
-            {fmt$(d.totalMarketValue)}
-          </div>
+          <div className="text-2xl font-semibold">{fmt$(d.totalMarketValue)}</div>
         </div>
       </div>
 
-      {/* Closed trades CSV */}
+      {/* Export */}
       <button
         onClick={downloadCsv}
         className="px-4 py-2 bg-teal-500 rounded hover:bg-teal-600"
       >
         Export CSV
       </button>
-
-      {/* ...open positions, closed trades, candlestick, winners/losers... */}
-      {/* You can keep adding your tables/charts here exactly as before */}
     </div>
   );
 }
