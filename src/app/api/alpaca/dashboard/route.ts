@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
 import { getAccountAndPositions } from '@/lib/alpacaService';
 
-const uri = process.env.MONGO_URI!;
+const uri = process.env.MONGODB_URI!;
 const client = globalThis.mongoClient ?? new MongoClient(uri);
 if (!globalThis.mongoClient) globalThis.mongoClient = client;
 
