@@ -37,13 +37,14 @@ export async function GET(req: NextRequest) {
 
   const bars = [];
   for await (const bar of resp) {
+    const b: any = bar;           // <-- cast to any to satisfy TypeScript
     bars.push({
-      Timestamp:  bar.t,
-      OpenPrice:  bar.o,
-      HighPrice:  bar.h,
-      LowPrice:   bar.l,
-      ClosePrice: bar.c,
-      Volume:     bar.v,
+      Timestamp:  b.t,            // ISO string
+      OpenPrice:  b.o,
+      HighPrice:  b.h,
+      LowPrice:   b.l,
+      ClosePrice: b.c,
+      Volume:     b.v,
     });
   }
 
