@@ -7,29 +7,29 @@ import dynamic from "next/dynamic";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import isoWeek from "dayjs/plugin/isoWeek";
-import { Config, Data, Layout } from 'plotly.js';
+import { Config, Data, Layout } from "plotly.js";
 
 dayjs.extend(utc);
 dayjs.extend(isoWeek);
 
+// -------------------- Plotly typing --------------------
 interface PlotParams {
   data: Data[];
   layout?: Partial<Layout>;
   config?: Partial<Config>;
-  [key: string]: any;
+  [key: string]: any; // allow extra props like useResizeHandler
 }
 
-const Plot = dynamic(() => import("react-plotly.js"), {
-  ssr: false,
-}) as React.ComponentType<PlotParams>;
+const Plot = dynamic(() => import("react-plotly.js"), { ssr: false }) as React.ComponentType<PlotParams>;
 
+// -------------------- generic fetcher --------------------
 const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
 
-// -------------------- types --------------------
+// -------------------- data types --------------------
 interface Bar {
   t: string; // ISO timestamp
   o: number;
@@ -92,10 +92,11 @@ export default function DashboardClient() {
       low: bars.map((b) => b.l),
       close: bars.map((b) => b.c),
       type: "candlestick" as const,
+      name: symbolFilter,
       increasing: { line: { width: 1 } },
       decreasing: { line: { width: 1 } },
     };
-  }, [bars]);
+  }, [bars, symbolFilter]);
 
   // -------------------- helpers --------------------
   const money = (n: number) => `$${n.toFixed(2)}`;
@@ -122,11 +123,7 @@ export default function DashboardClient() {
               <td className="px-2 py-1 text-right">{money(p.avg_entry_price)}</td>
               <td className="px-2 py-1 text-right">{money(p.current_price)}</td>
               <td className="px-2 py-1 text-right">{money(p.market_value)}</td>
-              <td
-                className={`px-2 py-1 text-right ${p.unrealized_pl >= 0 ? "text-green-400" : "text-red-400"}`}
-              >
-                {money(p.unrealized_pl)}
-              </td>
+              <td className={`px-2 py-1 text-right ${p.unrealized_pl >= 0 ? "text-green-400" : "text-red-400"}`}>{money(p.unrealized_pl)}</td>
             </tr>
           ))}
         </tbody>
@@ -171,15 +168,16 @@ export default function DashboardClient() {
 
       {/* Controls */}
       <div className="flex flex-wrap gap-4 items-end mb-8">
+        {/* Dates */}
         <div className="flex flex-col">
           <label className="text-sm mb-1">Start</label>
-          <input
-            type="date"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            className="bg-neutral-800 border border-neutral-600 rounded px-2 py-1"
-          />
+          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="bg-neutral-800 border border-neutral-600 rounded px-2 py-1" />
         </div>
+        <div className="flex flex-col">
+          <label className="text-sm mb-1">End</label>
+          <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="bg-neutral-800 border border-neutral-600 rounded px-2 py-1" />
+        </div>
+        {/* Symbol */}
         <div className="flex flex-col">
           <label className="text-sm mb-1">End</label>
           <input
