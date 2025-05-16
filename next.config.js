@@ -1,23 +1,8 @@
+// next.config.js  (CommonJS)
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  reactStrictMode: false,
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  // Serve static HTML file as the root
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/index.html',
-        permanent: false,
-      },
-    ];
-  }
-}
+  output: 'standalone',          // generates .next/standalone
+  // more options…
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;      // ←  this was missing

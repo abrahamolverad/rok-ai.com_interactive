@@ -6,17 +6,36 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p %PORT%",
-    "start-render": "next start -p $PORT"
+    "start-render": "next start -p $PORT",
+    "dummy": "echo test"
   },
   "dependencies": {
+    "@alpacahq/alpaca-trade-api": "^3.1.0",
+    "@react-three/drei": "^9.105.6",
+    "@react-three/fiber": "^8.16.6",
+    "bcryptjs": "^2.4.3",
+    "dayjs": "^1.11.11",
+    "gsap": "^3.12.5",
+    "lenis": "^1.0.45",
+    "mongoose": "^8.14.3",
     "next": "14.0.4",
+    "next-auth": "^4.24.7",
+    "papaparse": "^5.4.1",
+    "plotly.js": "^2.32.0",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "react-plotly.js": "^2.6.0",
+    "swr": "^2.2.5",
+    "three": "^0.164.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/mongoose": "^5.11.97",
     "@types/node": "20.3.1",
+    "@types/papaparse": "^5.3.14",
     "@types/react": "18.2.14",
     "@types/react-dom": "18.2.6",
+    "@types/three": "^0.164.0",
     "autoprefixer": "10.4.14",
     "postcss": "8.4.23",
     "tailwindcss": "3.3.2",
