@@ -1,11 +1,10 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google"; // Keep if you plan to use it
-import dbConnect from '@/lib/mongoConnect'; // Import your MongoDB connection utility
-import { User } from '@/models/User';   // Import your Mongoose User model (from user_model_ts_v2)
+import GoogleProvider from "next-auth/providers/google";
+import dbConnect from '@/lib/mongoConnect';
+import { User } from '@/models/User';
 import bcrypt from 'bcryptjs';
 
-// Helper to conditionally include GoogleProvider
 function getGoogleProvider() {
   const id = process.env.GOOGLE_CLIENT_ID;
   const secret = process.env.GOOGLE_CLIENT_SECRET;
@@ -17,7 +16,7 @@ function getGoogleProvider() {
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    ...getGoogleProvider(), // Conditionally add Google provider
+    ...getGoogleProvider(),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
