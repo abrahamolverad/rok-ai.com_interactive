@@ -13,22 +13,22 @@ export async function GET(req: Request) {
   switch (strategy) {
     case 'Day':
       alpaca = new Alpaca({
-        keyId:     process.env.ALPACA_DAY_KEY!,
-        secretKey: process.env.ALPACA_DAY_SECRET!,
+        keyId:     process.env.ALPACA_API_KEY!,
+        secretKey: process.env.ALPACA_API_SECRET!,
         paper:     true,
       });
       break;
     case 'Options':
       alpaca = new Alpaca({
-        keyId:     process.env.ALPACA_OPTIONS_KEY!,
-        secretKey: process.env.ALPACA_OPTIONS_SECRET!,
+        keyId:     process.env.ALPACA_SCALPINGSNIPER_KEY!,
+        secretKey: process.env.ALPACA_SCALPINGSNIPER_SECRET!,
         paper:     true,
       });
       break;
     default: // 'Swing'
       alpaca = new Alpaca({
-        keyId:     process.env.ALPACA_SWING_KEY!,
-        secretKey: process.env.ALPACA_SWING_SECRET!,
+        keyId:     process.env.ALPACA_UNHOLY_KEY!,
+        secretKey: process.env.ALPACA_UNHOLY_SECRET!,
         paper:     true,
       });
   }

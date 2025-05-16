@@ -355,7 +355,7 @@ export async function fetchAndCalculatePnl(
 // ✅ Export for dashboard API
 export async function getAccountAndPositions() {
     const alpaca = new Alpaca({
-      keyId: process.env.ALPACA_KEY_ID!,
+      keyId: process.env.ALPACA_API_KEY!,
       secretKey: process.env.ALPACA_SECRET_KEY!,
       paper: true,
     });
