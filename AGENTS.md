@@ -1,16 +1,16 @@
-﻿# AGENTS.md – Rules for Codex on rok-ai.com_interactive
+# AGENTS.md � Rules for Codex on rok-ai.com_interactive
 
 ## 0. TL;DR
 - Next.js 14 + TypeScript; Yarn workspaces
-- Build → yarn build
-- Tests → yarn test
+- Build ? npm run build
+- Tests ? npm test
 
 ## 1. Setup & validate
 Run these commands for every task:
-yarn install --frozen-lockfile
-yarn lint
-yarn test
-yarn build
+npm ci
+npm run lint
+npm test
+npm run build
 
 ## 2. Coding conventions
 - React Server Components in /src/app
@@ -18,7 +18,7 @@ yarn build
 - API routes under src/app/api/**/route.ts
 - Use zod for request/response validation
 
-## 3. Don’ts
+## 3. Don�ts
 - Never commit .env* files
 - Skip flaky Cypress tests tagged @flaky
 
