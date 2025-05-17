@@ -29,7 +29,7 @@ export const authOptions: NextAuthOptions = {
         if (!user.password) throw new Error('Authentication setup error for this user.');
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) throw new Error('Incorrect password.');
-        return { id: user._id.toString(), email: user.email, name: user.name || null };
+        return { id: String(user._id), email: user.email, name: user.name || null };
       }
     })
   ],
