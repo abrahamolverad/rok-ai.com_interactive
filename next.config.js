@@ -5,4 +5,4 @@ const nextConfig = {
   // more options…
 };
 
-module.exports = nextConfig;      // ←  this was missing
+const nextConfig = { experimental: { appDir: true }, ...(typeof nextConfig !== "undefined" ? nextConfig : {}) };\n\nmodule.exports = nextConfig;      // ←  this was missing
