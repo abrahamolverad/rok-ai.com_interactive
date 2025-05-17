@@ -3,8 +3,7 @@
     name: rokai-dashboard
     env: node
     plan: starter
-    region: frankfurt
     branch: nextjs-dashboard
     buildCommand: npm ci && npm run build
-    startCommand: npm run start-render
+    startCommand: npm run start
     rootDir: .
