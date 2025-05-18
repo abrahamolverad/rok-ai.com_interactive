@@ -33,10 +33,10 @@ interface Bar {
   t: string; o: number; h: number; l: number; c: number; v: number;
 }
 interface Position {
-  symbol: string; qty: number; avg_entry_price: number; current_price: number; market_value: number; unrealized_pl: number;
+  Symbol: string; Qty: number; "Avg Entry Price": number; "Current Price": number; "Market Value": number; "Unrealized P&L": number;
 }
 interface Trade {
-  symbol: string; qty: number; side: "buy" | "sell"; filled_at: string; filled_avg_price: number; realized_pl: number;
+  Symbol: string; Qty: number; Type: "Long" | "Short"; EntryTime: string; ExitTime: string; EntryPrice: number; ExitPrice: number; Pnl: number;
 }
 
 // ───────────────────────────────────────── Component
@@ -56,10 +56,10 @@ export default function DashboardClient() {
   }, [symbolFilter, timeFrame, start, end, strategy]);
 
   const dashboardUrl = useMemo(() => {
-    const qs = new URLSearchParams({ start, end });
+    const qs = new URLSearchParams({ start, end, strategy }); // Added strategy to query
     if (symbolFilter !== "ALL") qs.append("symbol", symbolFilter);
     return `/api/dashboard?${qs.toString()}`;
-  }, [start, end, symbolFilter]);
+  }, [start, end, symbolFilter, strategy]);
 
   // Data
   const { data: bars }      = useSWR<Bar[]>(barsUrl, barsUrl ? fetcher : null);
@@ -82,66 +82,75 @@ export default function DashboardClient() {
   }, [bars, symbolFilter]);
 
   // Helpers
-  const money = (n:number)=>`$${n.toFixed(2)}`;
+  const money = (n: number | undefined | null) =>
+    typeof n === "number" && !isNaN(n) ? `$${n.toFixed(2)}` : "-";
 
   // ------------------- Render functions
-  const renderPositions = () => !dashboard?.openPositions?.length ? (
-    <p>No open positions</p>
-  ) : (
-    <table className="mt-2 w-full text-sm">
-      <thead>
-        <tr className="border-b border-neutral-600">
-          <th className="px-2 py-1 text-left">Symbol</th>
-          <th className="px-2 py-1 text-right">Qty</th>
-          <th className="px-2 py-1 text-right">Avg Entry</th>
-          <th className="px-2 py-1 text-right">Current</th>
-          <th className="px-2 py-1 text-right">Mkt Value</th>
-          <th className="px-2 py-1 text-right">Unrealized P&L</th>
-        </tr>
-      </thead>
-      <tbody>
-        {dashboard.openPositions.map((p:Position)=>(
-          <tr key={p.symbol} className="border-b border-neutral-800">
-            <td className="px-2 py-1">{p.symbol}</td>
-            <td className="px-2 py-1 text-right">{p.qty.toLocaleString()}</td>
-            <td className="px-2 py-1 text-right">{money(p.avg_entry_price)}</td>
-            <td className="px-2 py-1 text-right">{money(p.current_price)}</td>
-            <td className="px-2 py-1 text-right">{money(p.market_value)}</td>
-            <td className={`px-2 py-1 text-right ${p.unrealized_pl>=0?"text-green-400":"text-red-400"}`}>{money(p.unrealized_pl)}</td>
+  const renderPositions = () =>
+    !dashboard?.openPositions?.length ? (
+      <p>No open positions</p>
+    ) : (
+      <table className="mt-2 w-full text-sm">
+        <thead>
+          <tr className="border-b border-neutral-600">
+            <th className="px-2 py-1 text-left">Symbol</th>
+            <th className="px-2 py-1 text-right">Qty</th>
+            <th className="px-2 py-1 text-right">Avg Entry</th>
+            <th className="px-2 py-1 text-right">Current</th>
+            <th className="px-2 py-1 text-right">Mkt Value</th>
+            <th className="px-2 py-1 text-right">Unrealized P&L</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+        </thead>
+        <tbody>
+          {dashboard.openPositions.map((p: Position) => (
+            <tr key={p.Symbol} className="border-b border-neutral-800">
+              <td className="px-2 py-1">{p.Symbol}</td>
+              <td className="px-2 py-1 text-right">{p.Qty?.toLocaleString?.() ?? "-"}</td>
+              <td className="px-2 py-1 text-right">{money(p["Avg Entry Price"])}</td>
+              <td className="px-2 py-1 text-right">{money(p["Current Price"])}</td>
+              <td className="px-2 py-1 text-right">{money(p["Market Value"])}</td>
+              <td className={`px-2 py-1 text-right ${p["Unrealized P&L"] >= 0 ? "text-green-400" : "text-red-400"}`}>
+                {money(p["Unrealized P&L"])}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
 
-  const renderClosedTrades = () => !dashboard?.closedTrades?.length ? (
-    <p>No closed trades</p>
-  ) : (
-    <table className="mt-2 w-full text-sm">
-      <thead>
-        <tr className="border-b border-neutral-600">
-          <th className="px-2 py-1 text-left">Symbol</th>
-          <th className="px-2 py-1 text-right">Qty</th>
-          <th className="px-2 py-1 text-right">Side</th>
-          <th className="px-2 py-1 text-right">Avg Price</th>
-          <th className="px-2 py-1 text-right">Realized P&L</th>
-          <th className="px-2 py-1 text-right">Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {dashboard.closedTrades.map((t:Trade,idx:number)=>(
-          <tr key={idx} className="border-b border-neutral-800">
-            <td className="px-2 py-1">{t.symbol}</td>
-            <td className="px-2 py-1 text-right">{t.qty}</td>
-            <td className="px-2 py-1 text-right capitalize">{t.side}</td>
-            <td className="px-2 py-1 text-right">{money(t.filled_avg_price)}</td>
-            <td className={`px-2 py-1 text-right ${t.realized_pl>=0?"text-green-400":"text-red-400"}`}>{money(t.realized_pl)}</td>
-            <td className="px-2 py-1 text-right">{dayjs(t.filled_at).format("YYYY-MM-DD")}</td>
+  const renderClosedTrades = () =>
+    !dashboard?.realizedTrades?.length ? (
+      <p>No closed trades</p>
+    ) : (
+      <table className="mt-2 w-full text-sm">
+        <thead>
+          <tr className="border-b border-neutral-600">
+            <th className="px-2 py-1 text-left">Symbol</th>
+            <th className="px-2 py-1 text-right">Qty</th>
+            <th className="px-2 py-1 text-right">Type</th>
+            <th className="px-2 py-1 text-right">Entry Price</th>
+            <th className="px-2 py-1 text-right">Exit Price</th>
+            <th className="px-2 py-1 text-right">P&L</th>
+            <th className="px-2 py-1 text-right">Date</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+        </thead>
+        <tbody>
+          {dashboard.realizedTrades.map((t: Trade, idx: number) => (
+            <tr key={idx} className="border-b border-neutral-800">
+              <td className="px-2 py-1">{t.Symbol}</td>
+              <td className="px-2 py-1 text-right">{t.Qty}</td>
+              <td className="px-2 py-1 text-right">{t.Type}</td>
+              <td className="px-2 py-1 text-right">{money(t.EntryPrice)}</td>
+              <td className="px-2 py-1 text-right">{money(t.ExitPrice)}</td>
+              <td className={`px-2 py-1 text-right ${t.Pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                {money(t.Pnl)}
+              </td>
+              <td className="px-2 py-1 text-right">{dayjs(t.ExitTime).format("YYYY-MM-DD")}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
 
   // ───────────────────────────────────────── JSX
   return (
@@ -153,22 +162,22 @@ export default function DashboardClient() {
         {/* Start */}
         <label className="flex flex-col">
           <span className="mb-1">Start</span>
-          <input type="date" value={start} onChange={e=>setStart(e.target.value)} className="bg-neutral-800 border border-neutral-600 rounded px-2 py-1" />
+          <input type="date" value={start} onChange={e => setStart(e.target.value)} className="bg-neutral-800 border border-neutral-600 rounded px-2 py-1" />
         </label>
         {/* End */}
         <label className="flex flex-col">
           <span className="mb-1">End</span>
-          <input type="date" value={end} onChange={e=>setEnd(e.target.value)} className="bg-neutral-800 border border-neutral-600 rounded px-2 py-1" />
+          <input type="date" value={end} onChange={e => setEnd(e.target.value)} className="bg-neutral-800 border border-neutral-600 rounded px-2 py-1" />
         </label>
         {/* Symbol */}
         <label className="flex flex-col col-span-2 sm:col-span-1">
           <span className="mb-1">Symbol</span>
-          <input type="text" placeholder="ALL or AAPL" value={symbolFilter} onChange={e=>setSymbolFilter(e.target.value.toUpperCase())} className="bg-neutral-800 border border-neutral-600 rounded px-2 py-1" />
+          <input type="text" placeholder="ALL or AAPL" value={symbolFilter} onChange={e => setSymbolFilter(e.target.value.toUpperCase())} className="bg-neutral-800 border border-neutral-600 rounded px-2 py-1" />
         </label>
         {/* Strategy */}
         <label className="flex flex-col">
           <span className="mb-1">Strategy</span>
-          <select value={strategy} onChange={e=>setStrategy(e.target.value)} className="bg-neutral-800 border border-neutral-600 rounded px-2 py-1">
+          <select value={strategy} onChange={e => setStrategy(e.target.value)} className="bg-neutral-800 border border-neutral-600 rounded px-2 py-1">
             <option value="day">Day</option>
             <option value="swing">Swing</option>
             <option value="options">Options</option>
@@ -178,7 +187,7 @@ export default function DashboardClient() {
           <label className="text-sm mb-1">TF</label>
           <select
             value={timeFrame}
-            onChange={(e) => setTimeFrame(e.target.value)}
+            onChange={e => setTimeFrame(e.target.value)}
             className="bg-neutral-800 border border-neutral-600 rounded px-2 py-1"
           >
             <option value="1Hour">1H</option>
@@ -195,18 +204,25 @@ export default function DashboardClient() {
           <div className="flex flex-wrap gap-6 text-sm">
             <p>
               <span className="font-medium">Realized P&L:</span>
-              <span className={dashboard.realized >= 0 ? "text-green-400" : "text-red-400"}>
-                ${dashboard.realized.toFixed(2)}
+              <span className={dashboard.totalRealizedPL >= 0 ? "text-green-400" : "text-red-400"}>
+                {typeof dashboard.totalRealizedPL === "number"
+                  ? `$${dashboard.totalRealizedPL.toFixed(2)}`
+                  : "-"}
               </span>
             </p>
             <p>
               <span className="font-medium">Unrealized P&L:</span>
-              <span className={dashboard.unrealized >= 0 ? "text-green-400" : "text-red-400"}>
-                ${dashboard.unrealized.toFixed(2)}
+              <span className={dashboard.unrealizedPL >= 0 ? "text-green-400" : "text-red-400"}>
+                {typeof dashboard.unrealizedPL === "number"
+                  ? `$${dashboard.unrealizedPL.toFixed(2)}`
+                  : "-"}
               </span>
             </p>
             <p>
-              <span className="font-medium">Market Value:</span> ${dashboard.marketValue.toLocaleString()}
+              <span className="font-medium">Market Value:</span>
+              {typeof dashboard.totalMarketValue === "number"
+                ? `$${dashboard.totalMarketValue.toLocaleString()}`
+                : "-"}
             </p>
           </div>
         </section>
