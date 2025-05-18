@@ -16,9 +16,9 @@ dayjs.extend(isSameOrBefore);
 type Creds = { keyId?: string; secretKey?: string };
 
 const STRATEGY_KEYS: Record<string, Creds> = {
-  day:    { keyId: process.env.ALPACA_API_KEY,    secretKey: process.env.ALPACA_API_SECRET },
-  swing:  { keyId: process.env.ALPACA_UNHOLY_KEY,  secretKey: process.env.ALPACA_UNHOLY_SECRET },
-  options:{ keyId: process.env.ALPACA_SCALPINGSNIPER_KEY,secretKey: process.env.ALPACA_SCALPINGSNIPER_SECRET },
+  day:    { keyId: process.env.ALPACA_API_KEY,    secretKey: process.env.ALPACA_SECRET_KEY },
+  swing:  { keyId: process.env.ALPACA_UNHOLY_KEY,  secretKey: process.env.ALPACA_UNHOLY_SECRET_KEY },
+  options:{ keyId: process.env.ALPACA_SCALPINGSNIPER_KEY,secretKey: process.env.ALPACA_SCALPINGSNIPER_SECRET_KEY },
 };
 
 // ────────────────────────────────────────────────────────────────
