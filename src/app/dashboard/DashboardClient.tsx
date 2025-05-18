@@ -56,7 +56,7 @@ export default function DashboardClient() {
   }, [symbolFilter, timeFrame, start, end, strategy]);
 
   const dashboardUrl = useMemo(() => {
-    const qs = new URLSearchParams({ start, end, strategy }); // Added strategy to query
+    const qs = new URLSearchParams({ start, end, strategy });
     if (symbolFilter !== "ALL") qs.append("symbol", symbolFilter);
     return `/api/dashboard?${qs.toString()}`;
   }, [start, end, symbolFilter, strategy]);
@@ -81,11 +81,16 @@ export default function DashboardClient() {
     };
   }, [bars, symbolFilter]);
 
-  // Helpers
+  // Defensive helpers
   const money = (n: number | undefined | null) =>
     typeof n === "number" && !isNaN(n) ? `$${n.toFixed(2)}` : "-";
 
-  // ------------------- Render functions
+  // Defensive: Extract/guard all summary values to match backend
+  const realizedPL = typeof dashboard?.totalRealizedPL === "number" ? dashboard.totalRealizedPL : 0;
+  const unrealizedPL = typeof dashboard?.unrealizedPL === "number" ? dashboard.unrealizedPL : 0;
+  const marketValue = typeof dashboard?.totalMarketValue === "number" ? dashboard.totalMarketValue : 0;
+
+  // Render helpers
   const renderPositions = () =>
     !dashboard?.openPositions?.length ? (
       <p>No open positions</p>
@@ -105,7 +110,7 @@ export default function DashboardClient() {
           {dashboard.openPositions.map((p: Position) => (
             <tr key={p.Symbol} className="border-b border-neutral-800">
               <td className="px-2 py-1">{p.Symbol}</td>
-              <td className="px-2 py-1 text-right">{p.Qty?.toLocaleString?.() ?? "-"}</td>
+              <td className="px-2 py-1 text-right">{typeof p.Qty === "number" ? p.Qty.toLocaleString() : "-"}</td>
               <td className="px-2 py-1 text-right">{money(p["Avg Entry Price"])}</td>
               <td className="px-2 py-1 text-right">{money(p["Current Price"])}</td>
               <td className="px-2 py-1 text-right">{money(p["Market Value"])}</td>
@@ -138,7 +143,7 @@ export default function DashboardClient() {
           {dashboard.realizedTrades.map((t: Trade, idx: number) => (
             <tr key={idx} className="border-b border-neutral-800">
               <td className="px-2 py-1">{t.Symbol}</td>
-              <td className="px-2 py-1 text-right">{t.Qty}</td>
+              <td className="px-2 py-1 text-right">{typeof t.Qty === "number" ? t.Qty : "-"}</td>
               <td className="px-2 py-1 text-right">{t.Type}</td>
               <td className="px-2 py-1 text-right">{money(t.EntryPrice)}</td>
               <td className="px-2 py-1 text-right">{money(t.ExitPrice)}</td>
@@ -200,29 +205,25 @@ export default function DashboardClient() {
       {/* Market summary */}
       {dashboard && (
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-2">P&L Summary</h2>
+          <h2 className="text-xl font-semibold mb-2">P&amp;L Summary</h2>
           <div className="flex flex-wrap gap-6 text-sm">
             <p>
-              <span className="font-medium">Realized P&L:</span>
-              <span className={dashboard.totalRealizedPL >= 0 ? "text-green-400" : "text-red-400"}>
-                {typeof dashboard.totalRealizedPL === "number"
-                  ? `$${dashboard.totalRealizedPL.toFixed(2)}`
-                  : "-"}
+              <span className="font-medium">Realized P&amp;L:</span>
+              <span className={realizedPL >= 0 ? "text-green-400" : "text-red-400"}>
+                {money(realizedPL)}
               </span>
             </p>
             <p>
-              <span className="font-medium">Unrealized P&L:</span>
-              <span className={dashboard.unrealizedPL >= 0 ? "text-green-400" : "text-red-400"}>
-                {typeof dashboard.unrealizedPL === "number"
-                  ? `$${dashboard.unrealizedPL.toFixed(2)}`
-                  : "-"}
+              <span className="font-medium">Unrealized P&amp;L:</span>
+              <span className={unrealizedPL >= 0 ? "text-green-400" : "text-red-400"}>
+                {money(unrealizedPL)}
               </span>
             </p>
             <p>
               <span className="font-medium">Market Value:</span>
-              {typeof dashboard.totalMarketValue === "number"
-                ? `$${dashboard.totalMarketValue.toLocaleString()}`
-                : "-"}
+              {marketValue.toLocaleString
+                ? `$${marketValue.toLocaleString()}`
+                : money(marketValue)}
             </p>
           </div>
         </section>
