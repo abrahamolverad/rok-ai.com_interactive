@@ -1,10 +1,9 @@
 ﻿services:
   - type: web
-    name: rokai-dashboard
+    name: rokai-nextjs
     env: node
     plan: starter
-    region: frankfurt
     branch: nextjs-dashboard
     buildCommand: npm ci && npm run build
-    startCommand: npm run start-render
+    startCommand: npm run start
     rootDir: .
