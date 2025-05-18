@@ -4,9 +4,26 @@ import dayjs from 'dayjs';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const startDate   = searchParams.get('startDate')!;
-  const endDate     = searchParams.get('endDate')!;
-  const strategy    = searchParams.get('strategy') ?? 'Swing';   // default
+
+  // Accepts either start or startDate, end or endDate for maximum compatibility
+  const startDateParam = searchParams.get('startDate') || searchParams.get('start');
+  const endDateParam   = searchParams.get('endDate')   || searchParams.get('end');
+  const strategy = searchParams.get('strategy') ?? 'Swing';   // default
+
+  // Defensive: Check for missing/invalid date params
+  const startDate = startDateParam ? new Date(startDateParam) : null;
+  const endDate   = endDateParam   ? new Date(endDateParam)   : null;
+
+  if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    return NextResponse.json(
+      {
+        error: 'Invalid or missing start/end date.',
+        startDateParam,
+        endDateParam,
+      },
+      { status: 400 }
+    );
+  }
 
   /* ---- pick creds / algo per strategy ------------------------------ */
   let alpaca: any;
