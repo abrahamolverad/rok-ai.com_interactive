@@ -71,12 +71,12 @@ export async function GET(req: Request) {
     }));
 
     // ---- closed (realized) trades ---- //
-    const acts = await alpaca.getActivities({
-      activity_type: 'FILL',
+    const acts = await alpaca.getAccountActivities('FILL', {
       direction: 'desc',
       after:  dayjs(startDate).toISOString(),
       until:  dayjs(endDate).endOf('day').toISOString(),
     });
+    
 
     const realizedTrades = acts
       .filter((a: any) => a.side === 'sell' || a.side === 'sell_short')
