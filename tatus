@@ -1,0 +1,71 @@
+[33m7a621a7[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mnextjs-dashboard[m[33m, [m[1;31morigin/nextjs-dashboard[m[33m)[m chore: force redeploy after restoring auth
+[33mf59b974[m fix: restore all authentication API endpoints from main
+[33ma386489[m chore: trigger redeploy after restoring nextauth endpoint
+[33m16c534a[m fix(auth): add NextAuth API endpoint as dotdotdotnextauth.ts
+[33mbf16be3[m chore: trigger redeploy after TypeScript id fix
+[33m212de18[m Merge pull request #19 from abrahamolverad/fix/authoptions-id-cast
+[33mcc72a4a[m[33m ([m[1;31morigin/fix/authoptions-id-cast[m[33m)[m fix(auth): cast user._id to string to satisfy TS
+[33m22611c7[m chore: trigger render redeploy after cleanup
+[33me276d88[m Merge pull request #18 from abrahamolverad/chore/cleanup-pages
+[33mbec1fb1[m[33m ([m[1;31morigin/chore/cleanup-pages[m[33m)[m chore: remove appDir experimental and drop app/api folder
+[33me0a0273[m chore: trigger render deploy after real dashboard setup
+[33m43d400c[m chore: trigger render deploy after adding middleware stubs
+[33m53b29ec[m Merge pull request #17 from abrahamolverad/chore/middleware-dashboard-api
+[33me137e27[m[33m ([m[1;31morigin/chore/middleware-dashboard-api[m[33m)[m chore(middleware): stub health & dashboard APIs at edge
+[33m789d012[m chore: trigger render redeploy after removing conflict
+[33me5377ab[m Merge pull request #16 from abrahamolverad/chore/remove-conflicting-app-route
+[33m2015cc0[m[33m ([m[1;31morigin/chore/remove-conflicting-app-route[m[33m)[m chore(api): remove conflicting app/api/dashboard route
+[33m681e2b4[m chore: trigger render deploy after dashboard API
+[33mf751562[m Merge pull request #15 from abrahamolverad/feat/api-dashboard
+[33m6015c1e[m[33m ([m[1;31morigin/feat/api-dashboard[m[33m)[m feat(api): add stub pages/api/dashboard endpoint
+[33m04c23a9[m chore: trigger Render redeploy after Dockerfile fix
+[33me85aaa9[m chore: trigger render redeploy after next.config fix
+[33me025d0b[m Merge pull request #14 from abrahamolverad/chore/fix-nextconfig
+[33mbbdbf02[m[33m ([m[1;31morigin/chore/fix-nextconfig[m[33m)[m chore(next): unify nextConfig and enable appDir
+[33m418b0a8[m chore: trigger render redeploy after adding middleware
+[33m1952ec1[m Merge pull request #13 from abrahamolverad/chore/middleware-health
+[33m099f645[m[33m ([m[1;31morigin/chore/middleware-health[m[33m)[m chore(middleware): add health endpoint middleware
+[33mdde3cc1[m chore: trigger render redeploy after adding pages/api health
+[33m612d868[m chore: trigger render redeploy after appDir fix
+[33m1cf146d[m Merge pull request #11 from abrahamolverad/chore/ensure-appDir
+[33mb289989[m[33m ([m[1;31morigin/chore/ensure-appDir[m[33m)[m chore(next): enable appDir with experimental flag
+[33m6fd7cf1[m chore: trigger render redeploy
+[33m212b775[m chore: trigger render redeploy
+[33m1359ae8[m Merge pull request #6 from abrahamolverad/docs/codex-no-network-guard
+[33mb4b4bff[m[33m ([m[1;31morigin/docs/codex-no-network-guard[m[33m)[m docs: skip npm install/lint/test/build inside Codex sandbox
+[33mb60a0fa[m[33m ([m[1;31morigin/chore/node20[m[33m, [m[1;32mchore/node20[m[33m)[m Merge pull request #5 from abrahamolverad/chore/add-render-spec
+[33m3743076[m[33m ([m[1;31morigin/chore/add-render-spec[m[33m)[m chore(render): add render.yaml for auto-deploy
+[33m5c170a3[m Merge pull request #4 from abrahamolverad/docs/use-npm-in-agents-md
+[33m06065a4[m[33m ([m[1;31morigin/docs/use-npm-in-agents-md[m[33m)[m docs: use npm commands in AGENTS.md
+[33mb479e7b[m Merge pull request #3 from abrahamolverad/docs/add-agents-md
+[33mdbf6b82[m[33m ([m[1;31morigin/docs/add-agents-md[m[33m)[m docs: add AGENTS.md
+[33m815ff0f[m chore: rename Alpaca env vars across all routes & services
+[33mf2798a1[m fix: single End input + final control grid
+[33m6158ec2[m feat: new dashboard API + bars tweaks + lock update
+[33ma5c8bf3[m fix: remove duplicate End input & stop sending symbol=ALL
+[33m030155d[m feat: typed Plotly wrapper + misc tweaks
+[33m6a16f9a[m refactor: typed Plot component & layout wrapper
+[33mff20282[m chore: remove duplicate bars route (.js)
+[33m316e9b0[m feat: add bars route + trade logger; tweak dashboard route
+[33m2e14e82[m cast Plot component to any to satisfy TS props check
+[33m6fbe064[m Switch to full Alpaca dashboard UI and clean up duplicate route.js
+[33mcb38473[m Remove duplicate route.js files and fix TS bar typing
+[33mb4fdc23[m Add Alpaca proxy API routes and front-end deps
+[33m2b8d043[m Add placeholder /api/dashboard Next.js API route
+[33m861ea86[m Replace DashboardClient with native select; keep charts/tables
+[33mc91041c[m Full Select primitives with placeholder support
+[33m7d0b0ab[m Full Select component with value/onValueChange props
+[33m3e28400[m Add Select wrapper export expected by dashboard
+[33m56f88e5[m Add minimal UI primitives for dashboard
+[33m1ecf94f[m Replace DashboardClient with interactive UI
+[33mb5629eb[m Fix MongoClient init and env var handling
+[33mca24d29[m Fix MongoDB URI env var reference
+[33m669021b[m Add getAccountAndPositions to support dashboard API
+[33m1a58924[m Remove old route.js
+[33m76bd206[m Add strategy filter to dashboard and fix Plotly types
+[33mb783d6a[m Restore full DashboardClient with Plotly type fix
+[33mfea2a42[m Restore full dashboard and add globals.css import
+[33mdf19a32[m Dashboard fully functional: split client/server, add NextAuth route
+[33md75841e[m Add authOptions.ts and update dashboard page to use it
+[33m7394440[m Restore full interactive dashboard with session protection
+[33m19e15b1[m Restore full interactive dashboard with session protection
