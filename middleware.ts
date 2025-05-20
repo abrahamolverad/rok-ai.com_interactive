@@ -9,7 +9,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // Dashboard data stub
+  // Dashboard data stub - IMPORTANT: Commented out to allow real API to respond
+  /*
   if (pathname === '/api/dashboard') {
     // You can pull start/end from searchParams if needed
     const start = searchParams.get('start') || '';
@@ -25,10 +26,11 @@ export function middleware(request: NextRequest) {
       ]
     });
   }
+  */
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/api/health', '/api/dashboard'],
+  matcher: ['/api/health', '/api/dashboard'], // Keep '/api/dashboard' in matcher if you might re-enable stub conditionally
 };
