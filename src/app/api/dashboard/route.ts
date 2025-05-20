@@ -1,140 +1,107 @@
 import { NextResponse } from 'next/server';
-import Alpaca from '@alpacahq/alpaca-trade-api';
-import dayjs from 'dayjs';
-import { fetchAndCalculatePnl, getOpenPositions } from '../../../../lib/alpacaService'; // Adjusted path
+import { MongoClient } from 'mongodb';
+import { getAccountAndPositions } from '@/lib/alpacaService'; // Assuming this path is correct from its original location
+import dayjs from 'dayjs'; // Import dayjs
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  console.log("[API /api/dashboard] Entry. Params:", searchParams.toString());
+  console.log("[API /api/alpaca/dashboard] Entry. Params:", searchParams.toString());
 
-  const startDateParam = searchParams.get('startDate') || searchParams.get('start');
-  const endDateParam   = searchParams.get('endDate')   || searchParams.get('end');
-  const strategy = searchParams.get('strategy') ?? 'Swing'; // Default to 'Swing' if not provided
+  // Correctly get startDate, endDate, and strategyKey from searchParams
+  const startDateParam = searchParams.get('startDate');
+  const endDateParam = searchParams.get('endDate');
+  // Use 'strategyKey' as sent by the client, default to 'all' if not present or handle as error
+  const strategyKey = searchParams.get('strategyKey') ?? 'all'; 
 
-  console.log(`[API /api/dashboard] Strategy: ${strategy}, StartDateParam: ${startDateParam}, EndDateParam: ${endDateParam}`);
+  console.log(`[API /api/alpaca/dashboard] StrategyKey: ${strategyKey}, StartDateParam: ${startDateParam}, EndDateParam: ${endDateParam}`);
 
-  // Validate dates
-  const startDate = startDateParam ? dayjs(startDateParam).startOf('day').toDate() : dayjs().subtract(30, 'days').startOf('day').toDate();
-  const endDate   = endDateParam   ? dayjs(endDateParam).endOf('day').toDate()   : dayjs().endOf('day').toDate();
+  // Validate and parse dates
+  const start = startDateParam ? dayjs(startDateParam).startOf('day').toDate() : dayjs().subtract(30, 'days').startOf('day').toDate();
+  const end = endDateParam ? dayjs(endDateParam).endOf('day').toDate() : dayjs().endOf('day').toDate();
 
-  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-    console.error("[API /api/dashboard] Invalid date parameters received.");
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    console.error("[API /api/alpaca/dashboard] Invalid date parameters received.");
     return NextResponse.json(
-      { error: 'Invalid or missing start/end date.', startDateParam, endDateParam },
+      { message: 'Invalid or missing start/end date.', startDateParam, endDateParam },
       { status: 400 }
     );
   }
-  console.log(`[API /api/dashboard] Processing for Start: ${startDate.toISOString()}, End: ${endDate.toISOString()}`);
+  console.log(`[API /api/alpaca/dashboard] Processing for Start: ${start.toISOString()}, End: ${end.toISOString()}`);
 
-  let alpaca: Alpaca;
-  try {
-    // IMPORTANT: Ensure these environment variables are correctly set for each strategy
-    // and that the 'strategy' string from the client matches one of these cases.
-    // The 'Default Strategy' from your UI screenshot needs to map here.
-    // If 'Default Strategy' is meant to be 'Swing', it will fall into the default case.
-    // If 'Default Strategy' is e.g. 'MyMainAccount' and it's not 'Day' or 'Options',
-    // it will also use the 'Swing' (default) keys.
-    // Double-check that the keys for the selected strategy are for the account
-    // where your TSLA trades occurred.
-    switch (strategy) {
-      case 'Day':
-        console.log("[API /api/dashboard] Using 'Day' strategy Alpaca keys.");
-        alpaca = new Alpaca({
-          keyId:     process.env.ALPACA_API_KEY!,
-          secretKey: process.env.ALPACA_SECRET_KEY!,
-          paper:     process.env.ALPACA_PAPER_TRADING === 'true' || true, // Default to paper if not set
-        });
-        break;
-      case 'Options':
-        console.log("[API /api/dashboard] Using 'Options' strategy Alpaca keys.");
-        alpaca = new Alpaca({
-          keyId:     process.env.ALPACA_SCALPINGSNIPER_KEY!,
-          secretKey: process.env.ALPACA_SCALPINGSNIPER_SECRET_KEY!,
-          paper:     process.env.ALPACA_PAPER_TRADING === 'true' || true,
-        });
-        break;
-      case 'Swing': // Explicitly handle 'Swing' if it's a common strategy name
-        console.log("[API /api/dashboard] Using 'Swing' strategy Alpaca keys.");
-         alpaca = new Alpaca({
-          keyId:     process.env.ALPACA_UNHOLY_KEY!, // Assuming these are for swing
-          secretKey: process.env.ALPACA_UNHOLY_SECRET_KEY!,
-          paper:     process.env.ALPACA_PAPER_TRADING === 'true' || true,
-        });
-        break;
-      default:
-        console.log(`[API /api/dashboard] Strategy '${strategy}' not explicitly mapped, using default/Swing Alpaca keys.`);
-        alpaca = new Alpaca({ // Defaulting to 'Swing' keys as in original code
-          keyId:     process.env.ALPACA_UNHOLY_KEY!,
-          secretKey: process.env.ALPACA_UNHOLY_SECRET_KEY!,
-          paper:     process.env.ALPACA_PAPER_TRADING === 'true' || true,
-        });
-    }
-    // Test connection / key validity
-    await alpaca.getAccount();
-    console.log("[API /api/dashboard] Alpaca account connection successful.");
-
-  } catch (e: any) {
-    console.error("[API /api/dashboard] Error initializing Alpaca or fetching account:", e.message);
-    console.error("[API /api/dashboard] Check strategy mapping and API key environment variables for strategy:", strategy);
-    return NextResponse.json(
-      { error: `Missing or invalid Alpaca API credentials for strategy: ${strategy}. ${e.message}` },
-      { status: 500 }
-    );
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    console.error("[API /api/alpaca/dashboard] ❌ MONGODB_URI is not defined.");
+    return NextResponse.json({ message: 'Missing MONGODB_URI' }, { status: 500 });
   }
 
+  const client = new MongoClient(uri);
+
   try {
-    // Fetch open positions
-    const { data: openPositionsData, total_upl, total_mv, error: openPositionsError } = await getOpenPositions(alpaca);
-    if (openPositionsError) {
-      console.warn("[API /api/dashboard] Error fetching open positions:", openPositionsError);
-      // Decide if you want to return an error or continue with potentially empty positions
-    }
-    console.log(`[API /api/dashboard] Fetched ${openPositionsData.length} open positions.`);
+    await client.connect();
+    console.log("[API /api/alpaca/dashboard] MongoDB connected.");
+    const db = client.db('rokai'); // Assuming 'rokai' is your DB name
+    const col = db.collection('realized_trades');
 
-    // Fetch and calculate realized P&L using the service function
-    console.log(`[API /api/dashboard] Calling fetchAndCalculatePnl for ${strategy} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
-    const pnlData = await fetchAndCalculatePnl(alpaca, startDate, endDate);
-    
-    const realizedTrades = pnlData.data; // This is RealizedTradeOutput[]
-    const fetchErrors = pnlData.fetchErrors;
-
-    if (fetchErrors && fetchErrors.length > 0) {
-        console.warn("[API /api/dashboard] Errors from fetchAndCalculatePnl:", fetchErrors);
+    const query: any = { exit_time: { $gte: start, $lte: end } };
+    if (strategyKey !== 'all') {
+      query.strategy = strategyKey; // Use the strategyKey for filtering
     }
-    console.log(`[API /api/dashboard] Calculated ${realizedTrades.length} realized trades from service.`);
+    console.log("[API /api/alpaca/dashboard] MongoDB query for realized_trades:", JSON.stringify(query));
+
+    const realizedTrades = await col.find(query).sort({ exit_time: -1 }).toArray();
+    console.log(`[API /api/alpaca/dashboard] Fetched ${realizedTrades.length} realized trades from MongoDB.`);
     if (realizedTrades.length > 0) {
-        console.log("[API /api/dashboard] First few realized trades from service:", JSON.stringify(realizedTrades.slice(0,3), null, 2));
+      console.log("[API /api/alpaca/dashboard] First few realized trades from DB:", JSON.stringify(realizedTrades.slice(0, 3), null, 2));
+    }
+    
+    // Ensure PNL is a number, default to 0 if null or undefined
+    const totalRealizedPL = realizedTrades.reduce((sum, t) => sum + (Number(t.pnl) || 0), 0);
+    console.log(`[API /api/alpaca/dashboard] Calculated Total Realized P&L from DB: ${totalRealizedPL}`);
+
+    // Fetch open positions (this part seemed to be working for unrealized P&L)
+    // Note: getAccountAndPositions might use a default Alpaca client if one isn't passed.
+    // If strategyKey should also determine API keys for open positions, this needs adjustment.
+    // For now, assuming it uses a general/default key setup that works for open positions.
+    const { positions, errors: openPositionsErrors } = await getAccountAndPositions(); 
+    // Assuming getAccountAndPositions might return an errors array
+    if (openPositionsErrors && openPositionsErrors.length > 0) {
+        console.warn("[API /api/alpaca/dashboard] Errors fetching open positions:", openPositionsErrors);
     }
 
+    const openPositionsMapped = positions.map((p: any) => ({
+      Symbol: p.Symbol,
+      Qty: p.Qty,
+      'Avg Entry Price': p['Avg Entry Price'],
+      'Current Price': p['Current Price'],
+      'Market Value': p['Market Value'],
+      'Unrealized P&L': p['Unrealized P&L'],
+      Side: p.Side,
+    }));
+    console.log(`[API /api/alpaca/dashboard] Fetched ${openPositionsMapped.length} open positions for unrealized P&L.`);
 
-    const totalRealizedPL = realizedTrades.reduce((sum, trade) => sum + (trade.Pnl || 0), 0);
-    console.log(`[API /api/dashboard] Total Realized P&L from service: ${totalRealizedPL}`);
 
-    // Ensure structure matches what client expects
-    // The openPositionsData from getOpenPositions already matches the client structure
-    // The realizedTrades from fetchAndCalculatePnl also largely matches
-    // { Symbol, Type, EntryTime, ExitTime, Qty, EntryPrice, ExitPrice, Pnl, ExitOrderID, ExitDate }
+    const unrealizedPL = openPositionsMapped.reduce((s, p) => s + (p['Unrealized P&L'] || 0), 0);
+    const totalMarketValue = openPositionsMapped.reduce((s, p) => s + (p['Market Value'] || 0), 0);
 
     return NextResponse.json({
-      openPositions: openPositionsData,
-      unrealizedPL: total_upl,
-      totalMarketValue: total_mv,
-      totalRealizedPL: totalRealizedPL,
-      realizedTrades: realizedTrades,
-      fetchErrors: fetchErrors || [], // Send back any errors from PnL calculation
+      openPositions: openPositionsMapped,
+      unrealizedPL,
+      totalMarketValue,
+      totalRealizedPL,
+      realizedTrades, // These now come from MongoDB
+      // topWinners and topLosers logic was here, can be re-added if needed
+      fetchErrors: openPositionsErrors || [], // Include any errors from fetching open positions
       dataTimestamp: new Date().toISOString(),
     });
-
-  } catch (error: any) {
-    console.error("[API /api/dashboard] General error in GET handler:", error);
-    return NextResponse.json(
-      {
-        error: error?.message || 'Unknown error in Alpaca API call or P&L processing.',
-        stack: error?.stack, // Be cautious about sending full stack in production
-        details: "Error occurred while fetching dashboard data.",
-        inputParams: { startDate: startDate.toISOString(), endDate: endDate.toISOString(), strategy }
-      },
-      { status: 500 }
-    );
+  } catch (err: any) {
+    console.error('[API /api/alpaca/dashboard] General error:', err);
+    return NextResponse.json({ message: err.message, fetchErrors: [err.message] }, { status: 500 });
+  } finally {
+    if (client) {
+      await client.close();
+      console.log("[API /api/alpaca/dashboard] MongoDB connection closed.");
+    }
   }
 }
