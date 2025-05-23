@@ -1,6 +1,5 @@
 'use client'; // Required for useEffect, useState, useSWR
-console.log("DASHBOARD CLIENT VERSION 20240523_01");
-
+console.log("DASHBOARD CLIENT VERSION 20240523_02"); // Incremented version
 
 import React, { useState, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
@@ -19,12 +18,12 @@ const Plot = dynamic(() => import('react-plotly.js'), {
 
 // --- Local simplified type for Bar Data ---
 interface SimpleAlpacaBar {
-  Timestamp: string | Date;
-  OpenPrice: number;
-  HighPrice: number;
-  LowPrice: number;
-  ClosePrice: number;
-  Volume?: number; // Optional
+    Timestamp: string | Date;
+    OpenPrice: number;
+    HighPrice: number;
+    LowPrice: number;
+    ClosePrice: number;
+    Volume?: number; // Optional
 }
 
 // --- Interfaces ---
@@ -38,7 +37,7 @@ interface RealizedTradeOutput {
     ExitPrice: number;
     Pnl: number;
     ExitDate?: string;
-    ExitOrderId?: string; // <<< Kept from previous version
+    ExitOrderId?: string;
 }
 
 interface PositionInfo {
@@ -68,8 +67,7 @@ interface DashboardData {
     fetchErrors: string[];
     dataTimestamp?: string;
     message?: string; // For API messages like "keys not configured"
-    // Potentially add account details if multiple Alpaca keys are used
-    currentAccountName?: string; // Example if API returns which account's data this is
+    currentAccountName?: string;
 }
 
 // --- Helper Function to safely format numbers ---
@@ -101,12 +99,11 @@ export default function DashboardPage() {
     // --- State ---
     const [startDate, setStartDate] = useState<string>(dayjs().subtract(30, 'days').format('YYYY-MM-DD'));
     const [endDate, setEndDate] = useState<string>(dayjs().format('YYYY-MM-DD'));
-    const [selectedSymbol, setSelectedSymbol] = useState<string>('ALL'); // Filter for Daily P&L chart and Closed Trades table
-    const [openPositionChartSymbol, setOpenPositionChartSymbol] = useState<string | null>(null); // Symbol for the 24h candlestick
-    const [selectedStrategyKey, setSelectedStrategyKey] = useState<string>('default_strategy'); // Placeholder for Alpaca Key/Strategy selection
+    const [selectedSymbol, setSelectedSymbol] = useState<string>('ALL');
+    const [openPositionChartSymbol, setOpenPositionChartSymbol] = useState<string | null>(null);
+    const [selectedStrategyKey, setSelectedStrategyKey] = useState<string>('default_strategy');
 
     // --- API URLs ---
-    // Append selectedStrategyKey to the dashboard API URL
     const dashboardApiUrl = (startDate && endDate && selectedStrategyKey) ? `/api/alpaca/dashboard?startDate=${startDate}&endDate=${endDate}&strategyKey=${selectedStrategyKey}` : null;
     const barsApiUrl = (openPositionChartSymbol) ? `/api/alpaca/bars?symbol=${openPositionChartSymbol}&timeframe=15Min&lookbackHours=24` : null;
 
@@ -121,18 +118,17 @@ export default function DashboardPage() {
         dashboardData.openPositions?.forEach(p => symbols.add(p.Symbol));
         dashboardData.realizedTrades?.forEach(t => symbols.add(t.Symbol));
         return ['ALL', ...Array.from(symbols).sort()];
-     }, [dashboardData]);
+    }, [dashboardData]);
 
     const filteredRealizedTrades = useMemo(() => {
         if (!dashboardData?.realizedTrades) return [];
         if (selectedSymbol === 'ALL') return dashboardData.realizedTrades;
         return dashboardData.realizedTrades.filter(trade => trade.Symbol === selectedSymbol);
-     }, [dashboardData?.realizedTrades, selectedSymbol]);
+    }, [dashboardData?.realizedTrades, selectedSymbol]);
 
-    // Calculate total P&L based on the FILTERED trades for display consistency in header card
     const filteredTotalRealizedPL = useMemo(() => {
         return filteredRealizedTrades.reduce((sum, t) => sum + t.Pnl, 0);
-     }, [filteredRealizedTrades]);
+    }, [filteredRealizedTrades]);
 
     const aggregatedPnlBySymbol = useMemo((): AggregatedPnl[] => {
         const tradesToAggregate = dashboardData?.realizedTrades || [];
@@ -162,9 +158,9 @@ export default function DashboardPage() {
         return [{
             x: sortedDates,
             y: sortedDates.map(date => pnlByDate[date]),
-            type: 'bar',
+            type: 'bar' as const, // Ensure 'bar' is treated as a literal type
             text: sortedDates.map(d => formatCurrency(pnlByDate[d])),
-            textposition: 'outside',
+            textposition: 'outside' as const,
             textfont: { size: 10, color: '#f8f8f5' }, // rokIvory
             name: `Daily P&L (${selectedSymbol})`,
             marker: { color: '#a855f7' } // rokPurple
@@ -179,7 +175,8 @@ export default function DashboardPage() {
             x: timestamps,
             open: bars.map(b => b.OpenPrice), high: bars.map(b => b.HighPrice),
             low: bars.map(b => b.LowPrice), close: bars.map(b => b.ClosePrice),
-            type: 'candlestick', name: openPositionChartSymbol, xaxis: 'x', yaxis: 'y',
+            type: 'candlestick' as const, // Ensure 'candlestick' is treated as a literal type
+            name: openPositionChartSymbol, xaxis: 'x', yaxis: 'y',
             increasing: { line: { color: '#FFFFFF' } }, // White candles
             decreasing: { line: { color: '#a855f7' } }  // rokPurple candles
         }];
@@ -191,7 +188,11 @@ export default function DashboardPage() {
     const handleStrategyKeyChange = (event: React.ChangeEvent<HTMLSelectElement>) => { setSelectedStrategyKey(event.target.value); };
 
     const handleExportCsv = () => {
-        if (!filteredRealizedTrades || filteredRealizedTrades.length === 0) { alert("No closed trade data to export for the selected filter."); return; }
+        if (!filteredRealizedTrades || filteredRealizedTrades.length === 0) { 
+            // Consider using a more integrated notification system instead of alert
+            console.warn("No closed trade data to export for the selected filter."); 
+            return; 
+        }
         const csvData = filteredRealizedTrades.map(trade => ({
             Symbol: trade.Symbol,
             Type: trade.Type,
@@ -206,8 +207,11 @@ export default function DashboardPage() {
         const csvString = Papa.unparse(csvData, { header: true });
         const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        if (link.download !== undefined) { const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `closed_trades_${selectedSymbol}_${startDate}_to_${endDate}.csv`); link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); } else { alert("CSV download is not supported in your browser."); }
-     };
+        if (link.download !== undefined) { const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `closed_trades_${selectedSymbol}_${startDate}_to_${endDate}.csv`); link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); } else { 
+            // Consider using a more integrated notification system instead of alert
+            console.warn("CSV download is not supported in your browser.");
+        }
+    };
 
     // --- Loading/Error/Message States ---
     if (dashboardIsLoading && dashboardApiUrl) { return <div className="flex justify-center items-center h-screen bg-black text-rokIvory"><div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rokPurple"></div><span className="ml-4 text-lg">Loading Dashboard Data...</span></div>; }
@@ -217,7 +221,23 @@ export default function DashboardPage() {
 
     // --- Helper Functions ---
     const formatPnl = (pnl: number | null | undefined) => { const fc = formatCurrency(pnl); if (pnl === null || typeof pnl === 'undefined' || isNaN(pnl)) return <span className="text-rokGrayText">{fc}</span>; return (<span className={pnl >= 0 ? 'text-green-500' : 'text-red-500'}>{fc}</span>); };
-    const renderFetchErrors = () => ( dashboardData.fetchErrors && dashboardData.fetchErrors.length > 0 && (<div className="mb-4 p-3 bg-yellow-900 border border-yellow-700 text-yellow-300 rounded"><strong>Data Fetching Warnings/Errors:</strong><ul className="list-disc pl-5 text-sm">{dashboardData.fetchErrors.map((err, index) => <li key={index}>{err}</li>)}</ul></div>) );
+    
+    // MODIFIED: renderFetchErrors to use explicit return and null for no errors
+    const renderFetchErrors = () => {
+        if (dashboardData.fetchErrors && dashboardData.fetchErrors.length > 0) {
+            return (
+                <div className="mb-4 p-3 bg-yellow-900 border border-yellow-700 text-yellow-300 rounded">
+                    <strong>Data Fetching Warnings/Errors:</strong>
+                    <ul className="list-disc pl-5 text-sm">
+                        {dashboardData.fetchErrors.map((err, index) => (
+                            <li key={`fetch-err-${index}`}>{err}</li>
+                        ))}
+                    </ul>
+                </div>
+            );
+        }
+        return null; // Explicitly return null if no errors
+    }; // Ensured semicolon
 
     // --- Main Return (Full Layout with Corrected Styles/Charts) ---
     return (
@@ -225,7 +245,7 @@ export default function DashboardPage() {
             {/* Header with Logo */}
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center space-x-4">
-                    <img src="/RokAi_Logo_Full_White_TransparentBG.png" alt="RokAi Logo" className="h-12 md:h-16 w-auto" /> {/* Replace with your logo path */}
+                    <img src="/RokAi_Logo_Full_White_TransparentBG.png" alt="RokAi Logo" className="h-12 md:h-16 w-auto" />
                 </div>
             </div>
 
@@ -234,18 +254,17 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     <div>
                         <label htmlFor="strategyKey" className="block text-sm font-medium text-rokGraySubtle mb-1">Strategy/Account:</label>
-<select 
-    id="strategyKey" 
-    value={selectedStrategyKey} 
-    onChange={handleStrategyKeyChange} 
-    className="w-full border border-rokGrayBorder bg-rokGrayInput text-rokGrayText p-2 rounded text-sm focus:ring-rokPurple focus:border-rokPurple"
->
-    <option value="default_strategy">Default Strategy</option>
-    <option value="unholy_v1">Unholy V1</option>
-    <option value="scalpingsniper_v0">ScalpingSniper V0</option>
-    <option value="stock_genie_v0">Stock Genie V0</option>
-</select>
-
+                        <select 
+                            id="strategyKey" 
+                            value={selectedStrategyKey} 
+                            onChange={handleStrategyKeyChange} 
+                            className="w-full border border-rokGrayBorder bg-rokGrayInput text-rokGrayText p-2 rounded text-sm focus:ring-rokPurple focus:border-rokPurple"
+                        >
+                            <option value="default_strategy">Default Strategy</option>
+                            <option value="unholy_v1">Unholy V1</option>
+                            <option value="scalpingsniper_v0">ScalpingSniper V0</option>
+                            <option value="stock_genie_v0">Stock Genie V0</option>
+                        </select>
                     </div>
                     <div>
                         <label htmlFor="startDate" className="block text-sm font-medium text-rokGraySubtle mb-1">Date Range:</label>
@@ -256,7 +275,7 @@ export default function DashboardPage() {
                         </div>
                     </div>
                     <div>
-                         <button onClick={() => mutateDashboard()} disabled={dashboardIsLoading || !dashboardApiUrl} className="w-full px-4 py-2 bg-rokPurple text-white rounded hover:bg-rokPurple/80 text-sm disabled:opacity-50 disabled:cursor-not-allowed" title="Load data for selected range"> {dashboardIsLoading ? 'Loading...' : 'Load Data'} </button>
+                        <button onClick={() => mutateDashboard()} disabled={dashboardIsLoading || !dashboardApiUrl} className="w-full px-4 py-2 bg-rokPurple text-white rounded hover:bg-rokPurple/80 text-sm disabled:opacity-50 disabled:cursor-not-allowed" title="Load data for selected range"> {dashboardIsLoading ? 'Loading...' : 'Load Data'} </button>
                     </div>
                 </div>
             </div>
@@ -294,9 +313,10 @@ export default function DashboardPage() {
                     </select>
                 </div>
                 {dailyPnlChartData.length > 0 && dailyPnlChartData[0].x.length > 0 ? (
-                    <Plot {...{
+                    // MODIFIED: Plotly props syntax
+                    <Plot
                         data={dailyPnlChartData as any}
-                        layout: {
+                        layout={{
                             autosize: true,
                             paper_bgcolor: 'rgba(0,0,0,0)',
                             plot_bgcolor: 'rgba(0,0,0,0)',
@@ -307,20 +327,20 @@ export default function DashboardPage() {
                             uniformtext: { minsize: 9, mode: 'show' },
                             margin: { l: 60, r: 30, t: 50, b: 50 },
                             hovermode: 'x unified'
-                        },
-                        useResizeHandler: true,
-                        className: "w-full h-[350px] md:h-[450px]",
-                        config: { responsive: true, displayModeBar: false }
-                    }} />
+                        }}
+                        useResizeHandler={true}
+                        className="w-full h-[350px] md:h-[450px]"
+                        config={{ responsive: true, displayModeBar: false }}
+                    />
                 ) : ( <p className="text-rokGraySubtle text-center py-10">No realized P&L data to display for {selectedSymbol === 'ALL' ? 'all symbols' : selectedSymbol} in the selected period.</p> )}
             </div>
 
-             {/* --- Open Positions & Candlestick Chart Section --- */}
+            {/* --- Open Positions & Candlestick Chart Section --- */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Open Positions Table */}
                 <div className="p-4 bg-rokGrayDark shadow-lg rounded-lg border border-rokGrayBorder">
                     <h2 className="text-xl font-semibold text-rokIvory mb-3">Open Positions ({dashboardData.openPositions?.length ?? 0})</h2>
-                    <div className="overflow-x-auto max-h-[400px]"> {/* Added max height for scroll */}
+                    <div className="overflow-x-auto max-h-[400px]">
                         {dashboardData.openPositions?.length > 0 ? (
                             <table className="min-w-full divide-y divide-rokGrayBorder text-sm">
                                 <thead className="bg-gray-700 sticky top-0 z-10">
@@ -350,7 +370,7 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                 {/* Open Position Candlestick Chart (Last 24h) */}
+                {/* Open Position Candlestick Chart (Last 24h) */}
                 <div className={`p-4 bg-rokGrayDark shadow-lg rounded-lg border border-rokGrayBorder ${!openPositionChartSymbol ? 'flex items-center justify-center text-rokGraySubtle' : ''}`}>
                     {!openPositionChartSymbol && <p>Click an open position symbol to view its chart.</p>}
                     {openPositionChartSymbol && (
@@ -363,7 +383,23 @@ export default function DashboardPage() {
                             {barsError && !barsIsLoading && <p className="text-center py-10 text-red-400">Error loading intraday data: {barsError.message}</p>}
                             {!barsIsLoading && !barsError && (
                                 openPosCandlestickChartData.length > 0 ? (
-                                    <Plot data={openPosCandlestickChartData as any} layout={{ autosize: true, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#f8f8f5' }, xaxis: { title: { text: 'Time (UTC)', font: { color: '#9ca3af'} }, type: 'date', tickformat: '%H:%M', automargin: true, gridcolor: '#374151', linecolor: '#4b5563', zerolinecolor: '#4b5563', rangeslider: { visible: false }, tickfont: { color: '#9ca3af'} }, yaxis: { title: { text: 'Price ($)', font: { color: '#9ca3af'} }, automargin: true, tickprefix: '$', gridcolor: '#374151', linecolor: '#4b5563', zerolinecolor: '#4b5563', tickfont: { color: '#9ca3af'} }, margin: { l: 60, r: 30, t: 10, b: 40 }, hovermode: 'x unified' }} useResizeHandler={true} className="w-full h-[350px]" config={{ responsive: true, displayModeBar: false }} />
+                                    // MODIFIED: Plotly props syntax
+                                    <Plot 
+                                        data={openPosCandlestickChartData as any} 
+                                        layout={{ 
+                                            autosize: true, 
+                                            paper_bgcolor: 'rgba(0,0,0,0)', 
+                                            plot_bgcolor: 'rgba(0,0,0,0)', 
+                                            font: { color: '#f8f8f5' }, 
+                                            xaxis: { title: { text: 'Time (UTC)', font: { color: '#9ca3af'} }, type: 'date', tickformat: '%H:%M', automargin: true, gridcolor: '#374151', linecolor: '#4b5563', zerolinecolor: '#4b5563', rangeslider: { visible: false }, tickfont: { color: '#9ca3af'} }, 
+                                            yaxis: { title: { text: 'Price ($)', font: { color: '#9ca3af'} }, automargin: true, tickprefix: '$', gridcolor: '#374151', linecolor: '#4b5563', zerolinecolor: '#4b5563', tickfont: { color: '#9ca3af'} }, 
+                                            margin: { l: 60, r: 30, t: 10, b: 40 }, 
+                                            hovermode: 'x unified' 
+                                        }} 
+                                        useResizeHandler={true} 
+                                        className="w-full h-[350px]" 
+                                        config={{ responsive: true, displayModeBar: false }} 
+                                    />
                                 ) : ( <p className="text-rokGraySubtle text-center py-10">No intraday data available for {openPositionChartSymbol} in the last 24 hours.</p> )
                             )}
                         </>
@@ -371,14 +407,13 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-
             {/* Closed Trades Table */}
             <div className="p-4 bg-rokGrayDark shadow-lg rounded-lg border border-rokGrayBorder mb-6">
                 <div className="flex justify-between items-center mb-3">
                     <h2 className="text-xl font-semibold text-rokIvory">Closed Trades ({filteredRealizedTrades.length}) for {selectedSymbol}</h2>
                     <button onClick={handleExportCsv} disabled={filteredRealizedTrades.length === 0 || dashboardIsLoading} className="px-3 py-1 bg-rokPurple text-white rounded hover:bg-rokPurple/80 text-sm disabled:opacity-50 disabled:cursor-not-allowed"> Export CSV </button>
                 </div>
-                <div className="overflow-x-auto max-h-[400px]"> {/* Added max height for scroll */}
+                <div className="overflow-x-auto max-h-[400px]">
                     {filteredRealizedTrades.length > 0 ? (
                         <table className="min-w-full divide-y divide-rokGrayBorder text-sm">
                             <thead className="bg-gray-700 sticky top-0 z-10">
@@ -391,7 +426,7 @@ export default function DashboardPage() {
                                     <th className="px-4 py-2 text-right font-medium text-rokGrayText uppercase tracking-wider">Exit Price</th>
                                     <th className="px-4 py-2 text-left font-medium text-rokGrayText uppercase tracking-wider">Exit Time</th>
                                     <th className="px-4 py-2 text-right font-medium text-rokGrayText uppercase tracking-wider">P&L</th>
-                                    <th className="px-4 py-2 text-left font-medium text-rokGrayText uppercase tracking-wider">Exit Order ID</th> {/* <<< Added Column Header >>> */}
+                                    <th className="px-4 py-2 text-left font-medium text-rokGrayText uppercase tracking-wider">Exit Order ID</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-rokGrayDark divide-y divide-rokGrayBorder">
@@ -406,8 +441,8 @@ export default function DashboardPage() {
                                         <td className="px-4 py-2 whitespace-nowrap text-rokGrayText">{dayjs(trade.EntryTime).format('YYYY-MM-DD HH:mm:ss')}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{safeToFixed(trade.ExitPrice, 2, '0.00')}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-rokGrayText">{dayjs(trade.ExitTime).format('YYYY-MM-DD HH:mm:ss')}</td>
-                                        <td className="px-4 py-2 whitespace-nowrap text-right">{safeToFixed(trade.Pnl, 2, '0.00')}</td>
-                                        <td className="px-4 py-2 whitespace-nowrap text-rokGrayText text-xs">{trade.ExitOrderId || 'N/A'}</td> {/* <<< Display Exit Order ID >>> */}
+                                        <td className="px-4 py-2 whitespace-nowrap text-right">{safeToFixed(trade.Pnl, 2, '0.00')}</td> {/* This was previously formatPnl, changed to safeToFixed for consistency with CSV export. Color can be added via className if needed */}
+                                        <td className="px-4 py-2 whitespace-nowrap text-rokGrayText text-xs">{trade.ExitOrderId || 'N/A'}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -426,7 +461,7 @@ export default function DashboardPage() {
                 {/* Top Losers Card */}
                 <div className="p-4 bg-rokGrayDark shadow-lg rounded-lg border border-rokGrayBorder">
                     <h2 className="text-xl font-semibold text-red-400 mb-3">Top 10 Losing Symbols (Overall Period)</h2>
-                   {aggregatedTopLosers.length > 0 ? ( <ul className="space-y-2 text-sm"> {aggregatedTopLosers.map((agg, i) => ( <li key={`loss-agg-${agg.Symbol}-${i}`} className="flex justify-between items-center border-b border-rokGrayBorder pb-1"> <span className="text-rokGrayText"> <span className="font-medium text-rokIvory">{agg.Symbol}</span> <span className="text-xs text-rokGraySubtle ml-1">({agg.TradeCount} trade{agg.TradeCount !== 1 ? 's' : ''})</span> </span> <span className="font-medium text-red-400">{formatCurrency(agg.TotalPnl)}</span> </li> ))} </ul> ) : <p className="text-rokGraySubtle text-center py-5">No losing trades found in the selected period.</p>}
+                    {aggregatedTopLosers.length > 0 ? ( <ul className="space-y-2 text-sm"> {aggregatedTopLosers.map((agg, i) => ( <li key={`loss-agg-${agg.Symbol}-${i}`} className="flex justify-between items-center border-b border-rokGrayBorder pb-1"> <span className="text-rokGrayText"> <span className="font-medium text-rokIvory">{agg.Symbol}</span> <span className="text-xs text-rokGraySubtle ml-1">({agg.TradeCount} trade{agg.TradeCount !== 1 ? 's' : ''})</span> </span> <span className="font-medium text-red-400">{formatCurrency(agg.TotalPnl)}</span> </li> ))} </ul> ) : <p className="text-rokGraySubtle text-center py-5">No losing trades found in the selected period.</p>}
                 </div>
             </div>
 
@@ -435,4 +470,3 @@ export default function DashboardPage() {
         </div>
     );
 }
-
