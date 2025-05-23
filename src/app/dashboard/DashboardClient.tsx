@@ -231,12 +231,18 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     <div>
                         <label htmlFor="strategyKey" className="block text-sm font-medium text-rokGraySubtle mb-1">Strategy/Account:</label>
-                        <select id="strategyKey" value={selectedStrategyKey} onChange={handleStrategyKeyChange} className="w-full border border-rokGrayBorder bg-rokGrayInput text-rokGrayText p-2 rounded text-sm focus:ring-rokPurple focus:border-rokPurple">
-                            {/* Populate this with actual strategy keys/names */}
-                            <option value="default_strategy">Default Strategy</option>
-                            <option value="unholy_v1">Unholy V1</option>
-                            <option value="stock_genie_v0">Stock Genie V0</option>
-                        </select>
+<select 
+    id="strategyKey" 
+    value={selectedStrategyKey} 
+    onChange={handleStrategyKeyChange} 
+    className="w-full border border-rokGrayBorder bg-rokGrayInput text-rokGrayText p-2 rounded text-sm focus:ring-rokPurple focus:border-rokPurple"
+>
+    <option value="default_strategy">Default Strategy</option>
+    <option value="unholy_v1">Unholy V1</option>
+    <option value="scalpingsniper_v0">ScalpingSniper V0</option>
+    <option value="stock_genie_v0">Stock Genie V0</option>
+</select>
+
                     </div>
                     <div>
                         <label htmlFor="startDate" className="block text-sm font-medium text-rokGraySubtle mb-1">Date Range:</label>
