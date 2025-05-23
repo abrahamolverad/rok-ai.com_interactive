@@ -79,4 +79,12 @@ The website is configured for deployment on Render. Connect your GitHub reposito
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Utilities
+
+### Merging Alpaca Trades
+
+`src/lib/merge_filled_trades.py` fetches the last 30 days of filled orders from the Alpaca API and matches them with JSONL logs written by the trading bot. Set `APCA_API_KEY_ID`, `APCA_API_SECRET_KEY`, and optionally `APCA_API_BASE_URL` in your environment. When run on Windows it creates `filled_trades_merged.csv` next to `genie_top3_v3_tradelog.jsonl`.
+
 # Test commit to force Render update
+
