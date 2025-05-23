@@ -191,11 +191,11 @@ export default function DashboardPage() {
             Symbol: trade.Symbol,
             Type: trade.Type,
             Quantity: trade.Qty,
-            EntryPrice: trade.EntryPrice.toFixed(2),
-            ExitPrice: trade.ExitPrice.toFixed(2),
+            EntryPrice: typeof trade.EntryPrice === 'number' ? trade.EntryPrice.toFixed(2) : '0.00',
+            ExitPrice: typeof trade.ExitPrice === 'number' ? trade.ExitPrice.toFixed(2) : '0.00',
             EntryTime: dayjs(trade.EntryTime).format('YYYY-MM-DD HH:mm:ss'),
             ExitTime: dayjs(trade.ExitTime).format('YYYY-MM-DD HH:mm:ss'),
-            PnL: trade.Pnl.toFixed(2),
+            PnL: typeof trade.Pnl === 'number' ? trade.Pnl.toFixed(2) : '0.00',
             ExitOrderId: trade.ExitOrderId || 'N/A'
         }));
         const csvString = Papa.unparse(csvData, { header: true });
@@ -390,7 +390,7 @@ export default function DashboardPage() {
                                     <tr key={`${trade.Symbol}-${trade.ExitTime}-${index}`} className="hover:bg-gray-800">
                                         <td className="px-4 py-2 whitespace-nowrap font-medium text-rokIvory">{trade.Symbol}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-rokGrayText">{trade.Type}</td>
-                                        <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{trade.Qty.toFixed(4)}</td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{typeof trade.Qty === 'number' ? trade.Qty.toFixed(4) : '0.0000'}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{formatCurrency(trade.EntryPrice)}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-rokGrayText">{dayjs(trade.EntryTime).format('YYYY-MM-DD HH:mm:ss')}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{formatCurrency(trade.ExitPrice)}</td>
