@@ -363,4 +363,16 @@ export async function getAccountAndPositions() {
     const { data: positions } = await getOpenPositions(alpaca);
     return { positions };
   }
-  
+
+  import Alpaca from '@alpacahq/alpaca-trade-api';
+
+// Expose realized trade fetching for dashboard API
+export async function getRealizedTradesAndPnlFromAPI(startDate: Date, endDate: Date) {
+    const alpaca = new Alpaca({
+        keyId: process.env.ALPACA_API_KEY!,
+        secretKey: process.env.ALPACA_SECRET_KEY!,
+        paper: true,
+    });
+
+    return await fetchAndCalculatePnl(alpaca, startDate, endDate);
+}
