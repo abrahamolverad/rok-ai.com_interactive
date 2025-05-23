@@ -1,4 +1,6 @@
 'use client'; // Required for useEffect, useState, useSWR
+console.log("DASHBOARD CLIENT VERSION 20240523_01");
+
 
 import React, { useState, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
