@@ -1,5 +1,5 @@
 'use client'; // Required for useEffect, useState, useSWR
-console.log("DASHBOARD CLIENT VERSION 20240523_03"); // Incremented version
+console.log("DASHBOARD CLIENT VERSION 20240523_04"); // Incremented version
 
 import React, { useState, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
@@ -7,12 +7,27 @@ import dynamic from 'next/dynamic';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import Papa from 'papaparse'; // Needed for CSV export
-import type { Props as PlotlyComponentProps } from 'react-plotly.js'; // Import the Props type for Plotly
+// Import core types from plotly.js
+import type { Data as PlotlyDataType, Layout as PlotlyLayoutType, Config as PlotlyConfigType } from 'plotly.js';
 
 dayjs.extend(utc);
 
-// --- Dynamically import Plotly component with explicit typing ---
-const Plot = dynamic<PlotlyComponentProps>(
+// Define a custom props interface for the Plotly component
+interface CustomPlotProps {
+    data: PlotlyDataType[];
+    layout?: Partial<PlotlyLayoutType>;
+    config?: Partial<PlotlyConfigType>;
+    className?: string;
+    style?: React.CSSProperties;
+    useResizeHandler?: boolean;
+    revision?: number;
+    onInitialized?: (figure: any, graphDiv: HTMLElement) => void;
+    onUpdate?: (figure: any, graphDiv: HTMLElement) => void;
+    // Add other react-plotly.js specific props if you use them
+}
+
+// --- Dynamically import Plotly component with explicit custom typing ---
+const Plot = dynamic<CustomPlotProps>(
     () => import('react-plotly.js').then(mod => mod.default || mod), // Handle CJS/ESM interop
     {
         ssr: false, // Disable server-side rendering for this component
@@ -150,7 +165,7 @@ export default function DashboardPage() {
     const aggregatedTopWinners = useMemo(() => aggregatedSorted.slice(0, 10), [aggregatedSorted]);
     const aggregatedTopLosers = useMemo(() => aggregatedSorted.slice(-10).reverse(), [aggregatedSorted]);
 
-    const dailyPnlChartData = useMemo(() => {
+    const dailyPnlChartData = useMemo((): PlotlyDataType[] => { // Use PlotlyDataType[]
         if (!filteredRealizedTrades || filteredRealizedTrades.length === 0) return [];
         const pnlByDate: { [key: string]: number } = {};
         filteredRealizedTrades.forEach(trade => {
@@ -159,33 +174,31 @@ export default function DashboardPage() {
             pnlByDate[exitDate] += trade.Pnl;
         });
         const sortedDates = Object.keys(pnlByDate).sort((a, b) => dayjs(a).valueOf() - dayjs(b).valueOf());
-        // Ensure the structure matches Plotly.Data[]
-        const chartData: Plotly.Data[] = [{
+        const chartData: PlotlyDataType[] = [{
             x: sortedDates,
             y: sortedDates.map(date => pnlByDate[date]),
             type: 'bar',
             text: sortedDates.map(d => formatCurrency(pnlByDate[d])),
             textposition: 'outside',
-            textfont: { size: 10, color: '#f8f8f5' }, // rokIvory
+            textfont: { size: 10, color: '#f8f8f5' }, 
             name: `Daily P&L (${selectedSymbol})`,
-            marker: { color: '#a855f7' } // rokPurple
+            marker: { color: '#a855f7' } 
         }];
         return chartData;
     }, [filteredRealizedTrades, selectedSymbol]);
 
-    const openPosCandlestickChartData = useMemo(() => {
+    const openPosCandlestickChartData = useMemo((): PlotlyDataType[] => { // Use PlotlyDataType[]
         if (!barsData?.bars || barsData.bars.length === 0 || !openPositionChartSymbol) return [];
         const bars = barsData.bars;
         const timestamps = bars.map(b => typeof b.Timestamp === 'string' ? b.Timestamp : b.Timestamp.toISOString());
-        // Ensure the structure matches Plotly.Data[]
-        const chartData: Plotly.Data[] = [{
+        const chartData: PlotlyDataType[] = [{
             x: timestamps,
             open: bars.map(b => b.OpenPrice), high: bars.map(b => b.HighPrice),
             low: bars.map(b => b.LowPrice), close: bars.map(b => b.ClosePrice),
             type: 'candlestick',
-            name: openPositionChartSymbol, // xaxis: 'x', yaxis: 'y', // These are default and usually not needed explicitly
-            increasing: { line: { color: '#FFFFFF' } }, // White candles
-            decreasing: { line: { color: '#a855f7' } }  // rokPurple candles
+            name: openPositionChartSymbol, 
+            increasing: { line: { color: '#FFFFFF' } }, 
+            decreasing: { line: { color: '#a855f7' } }  
         }];
         return chartData;
     }, [barsData, openPositionChartSymbol]);
@@ -317,9 +330,9 @@ export default function DashboardPage() {
                         {uniqueSymbols.map(symbol => (<option key={symbol} value={symbol}>{symbol}</option>))}
                     </select>
                 </div>
-                {dailyPnlChartData.length > 0 && dailyPnlChartData[0].x && dailyPnlChartData[0].x.length > 0 ? (
+                {dailyPnlChartData.length > 0 && dailyPnlChartData[0].x && (Array.isArray(dailyPnlChartData[0].x) && dailyPnlChartData[0].x.length > 0) ? (
                     <Plot
-                        data={dailyPnlChartData} // Removed 'as any'
+                        data={dailyPnlChartData} 
                         layout={{
                             autosize: true,
                             paper_bgcolor: 'rgba(0,0,0,0)',
@@ -386,9 +399,9 @@ export default function DashboardPage() {
                             {barsIsLoading && <p className="text-center py-10 text-rokGraySubtle">Loading Intraday Data for {openPositionChartSymbol}...</p>}
                             {barsError && !barsIsLoading && <p className="text-center py-10 text-red-400">Error loading intraday data: {barsError.message}</p>}
                             {!barsIsLoading && !barsError && (
-                                openPosCandlestickChartData.length > 0 ? (
+                                openPosCandlestickChartData.length > 0 && openPosCandlestickChartData[0].x && (Array.isArray(openPosCandlestickChartData[0].x) && openPosCandlestickChartData[0].x.length > 0) ? (
                                     <Plot 
-                                        data={openPosCandlestickChartData} // Removed 'as any'
+                                        data={openPosCandlestickChartData} 
                                         layout={{ 
                                             autosize: true, 
                                             paper_bgcolor: 'rgba(0,0,0,0)', 
