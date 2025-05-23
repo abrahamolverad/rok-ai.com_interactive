@@ -295,7 +295,7 @@ export default function DashboardPage() {
                 </div>
                 {dailyPnlChartData.length > 0 && dailyPnlChartData[0].x.length > 0 ? (
                     <Plot {...{
-                        data: dailyPnlChartData as any,
+                        data={dailyPnlChartData as any}
                         layout: {
                             autosize: true,
                             paper_bgcolor: 'rgba(0,0,0,0)',
