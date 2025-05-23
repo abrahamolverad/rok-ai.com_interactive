@@ -353,26 +353,39 @@ export async function fetchAndCalculatePnl(
     }
 }
 // ✅ Export for dashboard API
-export async function getAccountAndPositions() {
-    const alpaca = new Alpaca({
+export async function getAccountAndPositions(credsOverride?: { keyId: string; secretKey: string }) {
+    const creds = credsOverride || {
       keyId: process.env.ALPACA_API_KEY!,
       secretKey: process.env.ALPACA_SECRET_KEY!,
+    };
+    const alpaca = new Alpaca({
+      keyId: creds.keyId,
+      secretKey: creds.secretKey,
       paper: true,
     });
-  
     const { data: positions } = await getOpenPositions(alpaca);
     return { positions };
   }
+  
 
-  import Alpaca from '@alpacahq/alpaca-trade-api';
 
 // Expose realized trade fetching for dashboard API
-export async function getRealizedTradesAndPnlFromAPI(startDate: Date, endDate: Date) {
+export async function getRealizedTradesAndPnlFromAPI(
+    startDate: Date,
+    endDate: Date,
+    credsOverride?: { keyId: string; secretKey: string }
+  ) {
+    const creds = credsOverride || {
+      keyId: process.env.ALPACA_API_KEY!,
+      secretKey: process.env.ALPACA_SECRET_KEY!,
+    };
+    
     const alpaca = new Alpaca({
-        keyId: process.env.ALPACA_API_KEY!,
-        secretKey: process.env.ALPACA_SECRET_KEY!,
-        paper: true,
+      keyId: creds.keyId,
+      secretKey: creds.secretKey,
+      paper: true,
     });
 
     return await fetchAndCalculatePnl(alpaca, startDate, endDate);
-}
+  }
+  
