@@ -25,7 +25,6 @@ interface SimpleAlpacaBar {
   Volume?: number; // Optional
 }
 
-
 // --- Interfaces ---
 interface RealizedTradeOutput {
     Symbol: string;
@@ -71,6 +70,12 @@ interface DashboardData {
     currentAccountName?: string; // Example if API returns which account's data this is
 }
 
+// --- Helper Function to safely format numbers ---
+const safeToFixed = (value: any, digits: number = 2, fallback: string = '0.00') => {
+    if (typeof value === 'number' && !isNaN(value)) return value.toFixed(digits);
+    const num = Number(value);
+    return !isNaN(num) ? num.toFixed(digits) : fallback;
+};
 
 // --- Fetcher Functions ---
 const dashboardFetcher = async (url: string): Promise<DashboardData> => {
@@ -85,12 +90,10 @@ const barsFetcher = async (url: string): Promise<{ bars: SimpleAlpacaBar[] }> =>
     return res.json();
 };
 
-
 // --- Helper Function to Format Currency ---
 const formatCurrency = (value: number | null | undefined): string => {
     if (value === null || typeof value === 'undefined') return '$0.00'; if (isNaN(value)) { console.warn("formatCurrency received NaN, returning $0.00"); return '$0.00'; } return value.toLocaleString('en-US', { style: 'currency', currency: 'USD', });
 };
-
 
 export default function DashboardPage() {
     // --- State ---
@@ -190,12 +193,12 @@ export default function DashboardPage() {
         const csvData = filteredRealizedTrades.map(trade => ({
             Symbol: trade.Symbol,
             Type: trade.Type,
-            Quantity: trade.Qty,
-            EntryPrice: typeof trade.EntryPrice === 'number' ? trade.EntryPrice.toFixed(2) : '0.00',
-            ExitPrice: typeof trade.ExitPrice === 'number' ? trade.ExitPrice.toFixed(2) : '0.00',
+            Quantity: safeToFixed(trade.Qty, 4, '0.0000'),
+            EntryPrice: safeToFixed(trade.EntryPrice, 2, '0.00'),
+            ExitPrice: safeToFixed(trade.ExitPrice, 2, '0.00'),
             EntryTime: dayjs(trade.EntryTime).format('YYYY-MM-DD HH:mm:ss'),
             ExitTime: dayjs(trade.ExitTime).format('YYYY-MM-DD HH:mm:ss'),
-            PnL: typeof trade.Pnl === 'number' ? trade.Pnl.toFixed(2) : '0.00',
+            PnL: safeToFixed(trade.Pnl, 2, '0.00'),
             ExitOrderId: trade.ExitOrderId || 'N/A'
         }));
         const csvString = Papa.unparse(csvData, { header: true });
@@ -221,9 +224,7 @@ export default function DashboardPage() {
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center space-x-4">
                     <img src="/RokAi_Logo_Full_White_TransparentBG.png" alt="RokAi Logo" className="h-12 md:h-16 w-auto" /> {/* Replace with your logo path */}
-                    {/* <h1 className="text-2xl md:text-3xl font-bold text-rokIvory">Trading Dashboard</h1> */}
                 </div>
-                {/* Placeholder for user/account info if needed */}
             </div>
 
             {/* --- Filters --- */}
@@ -291,16 +292,24 @@ export default function DashboardPage() {
                     </select>
                 </div>
                 {dailyPnlChartData.length > 0 && dailyPnlChartData[0].x.length > 0 ? (
-                    <Plot data={dailyPnlChartData as any} layout={{
-                        autosize: true, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-                        font: { color: '#f8f8f5' }, // rokIvory
-                        xaxis: { title: { text: 'Date', font: { color: '#9ca3af'} }, type: 'date', tickformat: '%Y-%m-%d', automargin: true, gridcolor: '#374151', linecolor: '#4b5563', zerolinecolor: '#4b5563', tickfont: { color: '#9ca3af'} },
-                        yaxis: { title: { text: 'Daily P&L ($)', font: { color: '#9ca3af'} }, automargin: true, tickprefix: '$', gridcolor: '#374151', linecolor: '#4b5563', zerolinecolor: '#4b5563', tickfont: { color: '#9ca3af'} },
-                        bargap: 0.2,
-                        uniformtext: { minsize: 9, mode: 'show' },
-                        margin: { l: 60, r: 30, t: 50, b: 50 },
-                        hovermode: 'x unified'
-                    }} useResizeHandler={true} className="w-full h-[350px] md:h-[450px]" config={{ responsive: true, displayModeBar: false }} />
+                    <Plot {...{
+                        data: dailyPnlChartData as any,
+                        layout: {
+                            autosize: true,
+                            paper_bgcolor: 'rgba(0,0,0,0)',
+                            plot_bgcolor: 'rgba(0,0,0,0)',
+                            font: { color: '#f8f8f5' }, // rokIvory
+                            xaxis: { title: { text: 'Date', font: { color: '#9ca3af'} }, type: 'date', tickformat: '%Y-%m-%d', automargin: true, gridcolor: '#374151', linecolor: '#4b5563', zerolinecolor: '#4b5563', tickfont: { color: '#9ca3af'} },
+                            yaxis: { title: { text: 'Daily P&L ($)', font: { color: '#9ca3af'} }, automargin: true, tickprefix: '$', gridcolor: '#374151', linecolor: '#4b5563', zerolinecolor: '#4b5563', tickfont: { color: '#9ca3af'} },
+                            bargap: 0.2,
+                            uniformtext: { minsize: 9, mode: 'show' },
+                            margin: { l: 60, r: 30, t: 50, b: 50 },
+                            hovermode: 'x unified'
+                        },
+                        useResizeHandler: true,
+                        className: "w-full h-[350px] md:h-[450px]",
+                        config: { responsive: true, displayModeBar: false }
+                    }} />
                 ) : ( <p className="text-rokGraySubtle text-center py-10">No realized P&L data to display for {selectedSymbol === 'ALL' ? 'all symbols' : selectedSymbol} in the selected period.</p> )}
             </div>
 
@@ -326,10 +335,10 @@ export default function DashboardPage() {
                                     {dashboardData.openPositions.map((pos, index) => (
                                         <tr key={`${pos.Symbol}-${index}`} className="hover:bg-gray-800">
                                             <td className="px-4 py-2 whitespace-nowrap font-medium text-rokPurple hover:text-rokPurple/80 cursor-pointer" onClick={() => handleOpenPositionSymbolClick(pos.Symbol)}>{pos.Symbol}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{pos.Qty}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{formatCurrency(pos['Avg Entry Price'])}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{formatCurrency(pos['Current Price'])}</td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{formatCurrency(pos['Market Value'])}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{safeToFixed(pos.Qty, 4, '0.0000')}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{safeToFixed(pos['Avg Entry Price'], 2, '0.00')}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{safeToFixed(pos['Current Price'], 2, '0.00')}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{safeToFixed(pos['Market Value'], 2, '0.00')}</td>
                                             <td className="px-4 py-2 whitespace-nowrap text-right">{formatPnl(pos['Unrealized P&L'])}</td>
                                         </tr>
                                     ))}
@@ -390,12 +399,12 @@ export default function DashboardPage() {
                                     <tr key={`${trade.Symbol}-${trade.ExitTime}-${index}`} className="hover:bg-gray-800">
                                         <td className="px-4 py-2 whitespace-nowrap font-medium text-rokIvory">{trade.Symbol}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-rokGrayText">{trade.Type}</td>
-                                        <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{typeof trade.Qty === 'number' ? trade.Qty.toFixed(4) : '0.0000'}</td>
-                                        <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{formatCurrency(trade.EntryPrice)}</td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{safeToFixed(trade.Qty, 4, '0.0000')}</td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{safeToFixed(trade.EntryPrice, 2, '0.00')}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-rokGrayText">{dayjs(trade.EntryTime).format('YYYY-MM-DD HH:mm:ss')}</td>
-                                        <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{formatCurrency(trade.ExitPrice)}</td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{safeToFixed(trade.ExitPrice, 2, '0.00')}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-rokGrayText">{dayjs(trade.ExitTime).format('YYYY-MM-DD HH:mm:ss')}</td>
-                                        <td className="px-4 py-2 whitespace-nowrap text-right">{formatPnl(trade.Pnl)}</td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-right">{safeToFixed(trade.Pnl, 2, '0.00')}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-rokGrayText text-xs">{trade.ExitOrderId || 'N/A'}</td> {/* <<< Display Exit Order ID >>> */}
                                     </tr>
                                 ))}

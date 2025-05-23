@@ -1,3 +1,6 @@
+console.log("[DEBUG] LIVE route.ts executing for strategyKey logic – 2024-05-23");
+
+
 import { NextResponse } from 'next/server';
 import { getAccountAndPositions, getRealizedTradesAndPnlFromAPI } from '@/lib/alpacaService';
 import dayjs from 'dayjs';
