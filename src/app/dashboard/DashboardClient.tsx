@@ -1,5 +1,5 @@
 'use client'; // Required for useEffect, useState, useSWR
-console.log("DASHBOARD CLIENT VERSION 20240523_02"); // Incremented version
+console.log("DASHBOARD CLIENT VERSION 20240523_03"); // Incremented version
 
 import React, { useState, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
@@ -7,14 +7,18 @@ import dynamic from 'next/dynamic';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import Papa from 'papaparse'; // Needed for CSV export
+import type { Props as PlotlyComponentProps } from 'react-plotly.js'; // Import the Props type for Plotly
 
 dayjs.extend(utc);
 
-// --- Dynamically import Plotly component ---
-const Plot = dynamic(() => import('react-plotly.js'), {
-    ssr: false, // Disable server-side rendering for this component
-    loading: () => <div className="text-center py-10 text-rokGraySubtle">Loading Chart...</div>
-});
+// --- Dynamically import Plotly component with explicit typing ---
+const Plot = dynamic<PlotlyComponentProps>(
+    () => import('react-plotly.js').then(mod => mod.default || mod), // Handle CJS/ESM interop
+    {
+        ssr: false, // Disable server-side rendering for this component
+        loading: () => <div className="text-center py-10 text-rokGraySubtle">Loading Chart...</div>
+    }
+);
 
 // --- Local simplified type for Bar Data ---
 interface SimpleAlpacaBar {
@@ -155,31 +159,35 @@ export default function DashboardPage() {
             pnlByDate[exitDate] += trade.Pnl;
         });
         const sortedDates = Object.keys(pnlByDate).sort((a, b) => dayjs(a).valueOf() - dayjs(b).valueOf());
-        return [{
+        // Ensure the structure matches Plotly.Data[]
+        const chartData: Plotly.Data[] = [{
             x: sortedDates,
             y: sortedDates.map(date => pnlByDate[date]),
-            type: 'bar' as const, // Ensure 'bar' is treated as a literal type
+            type: 'bar',
             text: sortedDates.map(d => formatCurrency(pnlByDate[d])),
-            textposition: 'outside' as const,
+            textposition: 'outside',
             textfont: { size: 10, color: '#f8f8f5' }, // rokIvory
             name: `Daily P&L (${selectedSymbol})`,
             marker: { color: '#a855f7' } // rokPurple
         }];
+        return chartData;
     }, [filteredRealizedTrades, selectedSymbol]);
 
     const openPosCandlestickChartData = useMemo(() => {
         if (!barsData?.bars || barsData.bars.length === 0 || !openPositionChartSymbol) return [];
         const bars = barsData.bars;
         const timestamps = bars.map(b => typeof b.Timestamp === 'string' ? b.Timestamp : b.Timestamp.toISOString());
-        return [{
+        // Ensure the structure matches Plotly.Data[]
+        const chartData: Plotly.Data[] = [{
             x: timestamps,
             open: bars.map(b => b.OpenPrice), high: bars.map(b => b.HighPrice),
             low: bars.map(b => b.LowPrice), close: bars.map(b => b.ClosePrice),
-            type: 'candlestick' as const, // Ensure 'candlestick' is treated as a literal type
-            name: openPositionChartSymbol, xaxis: 'x', yaxis: 'y',
+            type: 'candlestick',
+            name: openPositionChartSymbol, // xaxis: 'x', yaxis: 'y', // These are default and usually not needed explicitly
             increasing: { line: { color: '#FFFFFF' } }, // White candles
             decreasing: { line: { color: '#a855f7' } }  // rokPurple candles
         }];
+        return chartData;
     }, [barsData, openPositionChartSymbol]);
 
     // --- Event Handlers ---
@@ -189,7 +197,6 @@ export default function DashboardPage() {
 
     const handleExportCsv = () => {
         if (!filteredRealizedTrades || filteredRealizedTrades.length === 0) { 
-            // Consider using a more integrated notification system instead of alert
             console.warn("No closed trade data to export for the selected filter."); 
             return; 
         }
@@ -208,7 +215,6 @@ export default function DashboardPage() {
         const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         if (link.download !== undefined) { const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", `closed_trades_${selectedSymbol}_${startDate}_to_${endDate}.csv`); link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); } else { 
-            // Consider using a more integrated notification system instead of alert
             console.warn("CSV download is not supported in your browser.");
         }
     };
@@ -222,7 +228,6 @@ export default function DashboardPage() {
     // --- Helper Functions ---
     const formatPnl = (pnl: number | null | undefined) => { const fc = formatCurrency(pnl); if (pnl === null || typeof pnl === 'undefined' || isNaN(pnl)) return <span className="text-rokGrayText">{fc}</span>; return (<span className={pnl >= 0 ? 'text-green-500' : 'text-red-500'}>{fc}</span>); };
     
-    // MODIFIED: renderFetchErrors to use explicit return and null for no errors
     const renderFetchErrors = () => {
         if (dashboardData.fetchErrors && dashboardData.fetchErrors.length > 0) {
             return (
@@ -236,8 +241,8 @@ export default function DashboardPage() {
                 </div>
             );
         }
-        return null; // Explicitly return null if no errors
-    }; // Ensured semicolon
+        return null; 
+    };
 
     // --- Main Return (Full Layout with Corrected Styles/Charts) ---
     return (
@@ -312,15 +317,14 @@ export default function DashboardPage() {
                         {uniqueSymbols.map(symbol => (<option key={symbol} value={symbol}>{symbol}</option>))}
                     </select>
                 </div>
-                {dailyPnlChartData.length > 0 && dailyPnlChartData[0].x.length > 0 ? (
-                    // MODIFIED: Plotly props syntax
+                {dailyPnlChartData.length > 0 && dailyPnlChartData[0].x && dailyPnlChartData[0].x.length > 0 ? (
                     <Plot
-                        data={dailyPnlChartData as any}
+                        data={dailyPnlChartData} // Removed 'as any'
                         layout={{
                             autosize: true,
                             paper_bgcolor: 'rgba(0,0,0,0)',
                             plot_bgcolor: 'rgba(0,0,0,0)',
-                            font: { color: '#f8f8f5' }, // rokIvory
+                            font: { color: '#f8f8f5' }, 
                             xaxis: { title: { text: 'Date', font: { color: '#9ca3af'} }, type: 'date', tickformat: '%Y-%m-%d', automargin: true, gridcolor: '#374151', linecolor: '#4b5563', zerolinecolor: '#4b5563', tickfont: { color: '#9ca3af'} },
                             yaxis: { title: { text: 'Daily P&L ($)', font: { color: '#9ca3af'} }, automargin: true, tickprefix: '$', gridcolor: '#374151', linecolor: '#4b5563', zerolinecolor: '#4b5563', tickfont: { color: '#9ca3af'} },
                             bargap: 0.2,
@@ -383,9 +387,8 @@ export default function DashboardPage() {
                             {barsError && !barsIsLoading && <p className="text-center py-10 text-red-400">Error loading intraday data: {barsError.message}</p>}
                             {!barsIsLoading && !barsError && (
                                 openPosCandlestickChartData.length > 0 ? (
-                                    // MODIFIED: Plotly props syntax
                                     <Plot 
-                                        data={openPosCandlestickChartData as any} 
+                                        data={openPosCandlestickChartData} // Removed 'as any'
                                         layout={{ 
                                             autosize: true, 
                                             paper_bgcolor: 'rgba(0,0,0,0)', 
@@ -441,7 +444,7 @@ export default function DashboardPage() {
                                         <td className="px-4 py-2 whitespace-nowrap text-rokGrayText">{dayjs(trade.EntryTime).format('YYYY-MM-DD HH:mm:ss')}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-right text-rokGrayText">{safeToFixed(trade.ExitPrice, 2, '0.00')}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-rokGrayText">{dayjs(trade.ExitTime).format('YYYY-MM-DD HH:mm:ss')}</td>
-                                        <td className="px-4 py-2 whitespace-nowrap text-right">{safeToFixed(trade.Pnl, 2, '0.00')}</td> {/* This was previously formatPnl, changed to safeToFixed for consistency with CSV export. Color can be added via className if needed */}
+                                        <td className="px-4 py-2 whitespace-nowrap text-right">{safeToFixed(trade.Pnl, 2, '0.00')}</td>
                                         <td className="px-4 py-2 whitespace-nowrap text-rokGrayText text-xs">{trade.ExitOrderId || 'N/A'}</td>
                                     </tr>
                                 ))}
