@@ -1,25 +1,27 @@
 // src/lib/authOptions.ts
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
-// Ensure this path is correct for your MongoDB connection utility
-import { mongoConnect } from '@/lib/mongoConnect'; // Or connectDb from '@/lib/mongoose' if that's preferred
-import { User } from '@/models/User'; // Your Mongoose User model
+import GoogleProvider from "next-auth/providers/google"; 
+import { mongoConnect } from '@/lib/mongoConnect'; 
+import { User } from '@/models/User';      
 import bcrypt from 'bcryptjs';
 
 // Helper function to conditionally add GoogleProvider
-function getGoogleProvider(): any[] { // Using any[] to simplify type for conditional provider
+function getGoogleProvider(): any[] { 
   const id = process.env.GOOGLE_CLIENT_ID;
   const secret = process.env.GOOGLE_CLIENT_SECRET;
+  // Only return GoogleProvider if both ID and Secret are set
   if (id && secret) {
+    console.log("Google OAuth configured: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set.");
     return [GoogleProvider({ clientId: id, clientSecret: secret })];
   }
-  return [];
+  console.log("Google OAuth not configured: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is missing.");
+  return []; // Return an empty array if not configured
 }
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    ...getGoogleProvider(),
+    ...getGoogleProvider(), // Spread the result here
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -28,13 +30,10 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) {
-          // It's better to throw specific error messages that NextAuth can pick up
-          // or return null and let NextAuth handle it based on pages.error
           console.error('Authorize: Missing email or password');
           throw new Error('Please enter both email and password.');
         }
 
-        // Use the imported mongoConnect (or connectDb)
         await mongoConnect(); 
         
         const user = await User.findOne({ email: credentials.email.toLowerCase() }).exec();
@@ -45,7 +44,6 @@ export const authOptions: NextAuthOptions = {
         }
         
         if (!user.password) {
-          // This case implies a user record exists (e.g. from OAuth) but has no password set for credentials login
           console.error('Authorize: User has no password set for credentials login:', user.email);
           throw new Error('This account may not be set up for password login. Try another method or reset password if available.');
         }
@@ -56,52 +54,72 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Incorrect password.');
         }
         
-        // Return the user object expected by NextAuth.js
-        // Ensure this matches the 'User' interface in your next-auth.d.ts for type safety in callbacks
         return { 
           id: String(user._id), 
           email: user.email, 
           name: user.name || null 
-          // Do not return the password hash or other sensitive fields
         };
       }
     })
   ],
   session: { 
     strategy: 'jwt', 
-    maxAge: 30 * 24 * 60 * 60 // 30 days
+    maxAge: 30 * 24 * 60 * 60 
   },
   pages: { 
-    signIn: '/login', // Redirect users to /login if they need to sign in
-    error: '/login'   // Redirect users to /login on error (e.g., failed credential sign in)
-                      // NextAuth.js appends ?error=... to the URL
+    signIn: '/login', 
+    error: '/login'   
   },
   callbacks: {
-    async jwt({ token, user }) {
-      // The 'user' object is available on initial sign-in
+    async jwt({ token, user, account, profile }) { // Added account and profile for OAuth user creation
       if (user) {
-        token.id = user.id; // Add custom 'id' property from your DB user to the JWT
-        // You can add other properties like role here if needed: token.role = user.role;
+        token.id = user.id;
+      }
+      // If signing in with Google and user object has 'id' (from potential DB interaction)
+      // Or if it's an OAuth sign in and we want to provision the user
+      if (account?.provider === "google" && profile?.email) {
+        try {
+          await mongoConnect();
+          let dbUser = await User.findOne({ email: profile.email });
+          if (!dbUser) {
+            console.log(`Google sign-in: New user, creating entry for ${profile.email}`);
+            dbUser = new User({
+              email: profile.email,
+              name: profile.name,
+              // googleId: profile.sub, // Store Google ID if needed
+              // image: profile.picture, // Store image if needed
+              // emailVerified: profile.email_verified ? new Date() : null, // Store verification status
+              // Password will be undefined for OAuth users unless they set one later
+            });
+            await dbUser.save();
+          }
+          // Ensure the token.id is set to your internal DB user id
+          token.id = String(dbUser._id);
+          token.name = dbUser.name; // ensure name is in token
+          token.email = dbUser.email; // ensure email is in token
+          token.picture = (profile as any).picture || dbUser.get('image'); // ensure picture is in token
+
+        } catch (error) {
+          console.error("Error during Google sign-in user provisioning/linking in JWT callback:", error);
+          // Decide if you want to prevent login if DB operation fails.
+          // For now, we'll let it proceed if basic token can be formed.
+        }
       }
       return token;
     },
     async session({ session, token }) {
-      // The 'token' object is the JWT. Add properties from it to the session.user object
-      // to make them available on the client via useSession() or getServerSession()
       if (token.id && session.user) {
         (session.user as { id: string }).id = token.id as string;
-        // If you added other properties to the token (e.g., role), add them to session.user here too
-        // (session.user as any).role = token.role; // Example
+         // Ensure name, email, image from token are passed to session
+        if (token.name) session.user.name = token.name as string;
+        if (token.email) session.user.email = token.email as string;
+        if (token.picture) session.user.image = token.picture as string;
       }
       return session;
     }
   },
-  secret: process.env.NEXTAUTH_SECRET, // Essential for JWT signing
-  debug: process.env.NODE_ENV === 'development' // Enable debug logs in development
+  secret: process.env.NEXTAUTH_SECRET, 
+  debug: process.env.NODE_ENV === 'development'
 };
-
-// Note: If you want Google sign-ins to also create/update users in your MongoDB,
-// you would typically add a `signIn` callback here or use a NextAuth.js Adapter.
-// For now, this setup primarily focuses on Credentials-based auth with your DB.
 
 export default authOptions;
